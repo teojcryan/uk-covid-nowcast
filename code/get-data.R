@@ -40,7 +40,7 @@ for (n in 1:n_delay){
       filter(!is.na(cases))
     
     saveRDS(cases_specimen, 
-            here::here(paste0("data/cases_specimen_",
+            here::here(paste0("data/cases_specimen/",
                               gsub("-", "_", date),
                               ".rds")))
   }
