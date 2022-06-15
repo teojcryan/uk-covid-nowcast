@@ -5,14 +5,16 @@ require(readr, quietly = TRUE)
 # nhse to LTLA lookup table
 ltla_nhser <- readRDS(here::here("data", "ltla_nhser.rds"))
 
-n_delay <- 15 # days before current date
+n_delay <- 30 # days before current date
 
 # load data 
-for (n in 1:n_delay){
+for (n in 10:n_delay){
   
-  date = Sys.Date() - n
+  date <- Sys.Date() - n
+  skip_to_next <- FALSE
   
   if (!(format(date, "%A") %in% c("Saturday", "Sunday"))){
+    tryCatch({
     cases_specimen_local <- read_csv(paste0(
       "https://api.coronavirus.data.gov.uk/v2/data?areaType=ltla&",
       "metric=newCasesBySpecimenDate&",
@@ -43,6 +45,9 @@ for (n in 1:n_delay){
             here::here(paste0("data/cases_specimen/",
                               gsub("-", "_", date),
                               ".rds")))
+    }, error = function(e) { skip_to_next <- TRUE })
+    
+    if (skip_to_next) { next }
   }
 }
 
