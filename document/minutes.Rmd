@@ -2,7 +2,9 @@
 title: "Nowcasting Covid-19 onset in the UK"
 author: "Ryan Teo"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 bibliography: references.bib
 ---
 
@@ -20,7 +22,9 @@ bibliography: references.bib
 -   Plotted cases over time by reporting delay
     -   Scotland, Wales, and Northern Ireland seem to be working on different reporting schedules
     -   What other visualisations are helpful?
-    -   Would be interesting to see if the distribution of delays changed over time maybe due to testing advice ![](../output/cases-delay.png)
+    -   Would be interesting to see if the distribution of delays changed over time maybe due to testing advice
+    
+![](../output/cases-delay.png)
 
 ## Theory
 The nowcasting problem is described as follows [@höhle2014].
