@@ -193,3 +193,30 @@ ggsave(
   ggarrange(p_delay_dist, p_delay_dist_period, ncol=1),
   dpi = 330, height = 8, width = 6
 )
+
+# exploratory plots for negative updates -------------------
+  # scatterplot of delay by reduction in cases
+dt[cases < 0
+][, ggplot(.SD, aes(x=delay, y = cases)) + 
+    geom_point() +
+    ylab("Changes in cases reported") +
+    xlab("Delay (days)") +
+    theme_bw()]
+
+  # plot of negative change in cases by date
+dt[cases < 0
+][, .(cases = sum(cases)), date
+][, ggplot(.SD, aes(x=date, y=cases)) + 
+    geom_bar(stat = 'identity') +
+    theme_bw()]
+
+  # plot comparing negative to positive updates
+dt[, grp := ifelse(cases >= 0, 1, 0)
+][, .(cases = sum(cases)), .(date, grp)
+][, ggplot(.SD, aes(x=date, y=cases, fill=factor(grp)))+
+    geom_bar(stat='identity') + 
+    scale_fill_discrete("", labels = c("Negative", "Positive")) +
+    scale_y_continuous("Cases", labels = scales::label_number(suffix = "K", scale = 1e-3)) +
+    xlab("Specimen date") +
+    theme_bw() + 
+    theme(legend.position = 'bottom')]
