@@ -55,46 +55,31 @@ for (n in 1:n_days){
   skip_to_next <- FALSE
   
   tryCatch({
-    # cases_specimen_local <- read_csv(paste0(
-    #   "https://api.coronavirus.data.gov.uk/v2/data?areaType=ltla&",
-    #   "metric=newCasesBySpecimenDate&",
-    #   "format=csv&",
-    #   "release=", date
-    # ))
-    
-    dt <- fread(paste0(
+    dt <- data.table::fread(paste0(
       "https://api.coronavirus.data.gov.uk/v2/data?areaType=nation&",
+      "metric=newCasesByPublishDate&",
       "metric=newCasesBySpecimenDate&",
+      "metric=previouslyReportedNewCasesBySpecimenDate&",
       "format=csv&",
       "release=", date
     ))
     
-    # cases_specimen <- 
-    #   cases_specimen_local %>%
-    #   rename(ltla_name = areaName) %>%
-    #   inner_join(ltla_nhser, by = "ltla_name") %>%
-    #   group_by(date, nhse_region) %>%
-    #   summarise(across(where(is.numeric), sum)) %>%
-    #   ungroup() %>%
-    #   rename(areaName = nhse_region) %>%
-    #   bind_rows(select(cases_specimen_national, -areaCode, -areaType)) %>%
-    #   select(date, region = areaName, cases = newCasesBySpecimenDate) %>%
-    #   filter(!is.na(cases))
-    
     dt_clean <- dt[areaName == "England"
-                   ][
+    ][
       , .(date = as.Date(date),
           region = `areaName`,
-          cases = `newCasesBySpecimenDate`
+          cases_pub = `newCasesByPublishDate`,
+          cases_spm = `newCasesBySpecimenDate`,
+          cases_spm_prev = `previouslyReportedNewCasesBySpecimenDate`
       )
     ]
     
     saveRDS(dt_clean, 
-            here::here(paste0("data/cases_specimen/national/",
+            here::here(paste0("data/cases/national/",
                               gsub("-", "_", date),
                               ".rds")))
-    }, error = function(e) { skip_to_next <- TRUE })
-    
-    if (skip_to_next) { next }
+  }, error = function(e) { skip_to_next <- TRUE })
+  
+  if (skip_to_next) { next }
 }
 
