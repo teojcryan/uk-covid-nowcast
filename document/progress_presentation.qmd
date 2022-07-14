@@ -1,0 +1,14 @@
+---
+title: "Nowcasting COVID-19 incidence in England"
+subtitle: "Progress report"
+date: "`r Sys.Date()`"
+author: "Ryan Teo"
+format: revealjs
+---
+
+## Action items from previous meeting
+1. Analyse test-specific case data
+2. Pre-process data for updated reporting schedule
+3. Visualise extra-long delays
+
+## 
