@@ -57,20 +57,21 @@ for (n in 1:n_days){
   tryCatch({
     dt <- data.table::fread(paste0(
       "https://api.coronavirus.data.gov.uk/v2/data?areaType=nation&",
-      "metric=newCasesByPublishDate&",
+      "areaCode=E92000001&", # England data only
       "metric=newCasesBySpecimenDate&",
-      "metric=previouslyReportedNewCasesBySpecimenDate&",
+      "metric=newCasesLFDConfirmedPCRBySpecimenDate&",
+      "metric=newCasesLFDOnlyBySpecimenDate&",
+      "metric=newCasesPCROnlyBySpecimenDate&",
       "format=csv&",
       "release=", date
     ))
     
-    dt_clean <- dt[areaName == "England"
-    ][
-      , .(date = as.Date(date),
-          region = `areaName`,
-          cases_pub = `newCasesByPublishDate`,
-          cases_spm = `newCasesBySpecimenDate`,
-          cases_spm_prev = `previouslyReportedNewCasesBySpecimenDate`
+    dt_clean <- dt[
+        , .(date = as.Date(date),
+            cases = `newCasesBySpecimenDate`,
+            cases_lfdpcr = `newCasesLFDConfirmedPCRBySpecimenDate`,
+            cases_ldf = `newCasesLFDOnlyBySpecimenDate`,
+            cases_pcr = `newCasesPCROnlyBySpecimenDate`
       )
     ]
     
