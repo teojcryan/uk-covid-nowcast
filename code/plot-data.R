@@ -220,3 +220,16 @@ dt[, grp := ifelse(cases >= 0, 1, 0)
     xlab("Specimen date") +
     theme_bw() + 
     theme(legend.position = 'bottom')]
+
+# plot of extra-long delays -----------------
+days_since <- data.table(date = unique(dt$date),
+                         delay = 1 + as.numeric(max(dt$date) - unique(dt$date)))
+
+ggplot(dt, aes(x=date, y=delay)) +
+  geom_bin2d(bins = 116) +
+  geom_line(data = days_since, col ='red', lwd=1) +
+  scale_fill_continuous("Count", type = "viridis", direction=-1) +
+  theme_bw() + 
+  xlab("Specimen Date") +
+  ylab("Delay (days)") +
+  theme(legend.position='bottom')
