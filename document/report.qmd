@@ -1,0 +1,21 @@
+---
+title: "MA931"
+author: "Ryan Teo"
+format: 
+  pdf:
+    documentclass: report
+    keep-tex: true
+---
+
+# Introduction
+
+
+
+# Methodology
+Lorem 
+
+# Results
+
+# Discussion
+
+# Conclusion
