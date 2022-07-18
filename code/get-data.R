@@ -69,16 +69,14 @@ for (n in 1:n_days){
     dt_clean <- dt[
         , .(date = as.Date(date),
             cases = `newCasesBySpecimenDate`,
-            cases_lfdpcr = `newCasesLFDConfirmedPCRBySpecimenDate`,
-            cases_ldf = `newCasesLFDOnlyBySpecimenDate`,
+            cases_lfd_pcr = `newCasesLFDConfirmedPCRBySpecimenDate`,
+            cases_lfd = `newCasesLFDOnlyBySpecimenDate`,
             cases_pcr = `newCasesPCROnlyBySpecimenDate`
       )
     ]
     
     saveRDS(dt_clean, 
-            here::here(paste0("data/cases/national/",
-                              gsub("-", "_", date),
-                              ".rds")))
+            here::here(paste0("data/cases/national/", date, ".rds")))
   }, error = function(e) { skip_to_next <- TRUE })
   
   if (skip_to_next) { next }
