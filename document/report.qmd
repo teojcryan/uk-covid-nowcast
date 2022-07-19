@@ -1,18 +1,19 @@
 ---
-title: "MA931"
+title: "Nowcasting of COVID-19 cases in England"
 author: "Ryan Teo"
 format: 
-  pdf:
-    documentclass: report
-    keep-tex: true
+  html: default
+#  pdf:
+#    documentclass: report
+#    keep-tex: true
 ---
 
 # Introduction
-
-
+- Explain context of nowcasting, why it is required
+- Explain past efforts at nowcasting
 
 # Methodology
-Lorem 
+- 
 
 # Results
 

@@ -4,7 +4,7 @@
 date: "`r Sys.Date()`"
 author: "Ryan Teo"
 format: 
-  beamer: default
+  #beamer: default
   revealjs:
     smaller: true
     scrollable: true
@@ -189,6 +189,6 @@ dt[, lapply(.SD, sum, na.rm=T),
 - Need a different model for LFD only stream 
 
 ## Next steps
-- Try out `epinowcast`
+- Try out a basic nowcast with `epinowcast`
 - Explore further stratification by location and age
 - Create counterfactual datasets with alternative reporting schedule (weekdaily vs weekly)
