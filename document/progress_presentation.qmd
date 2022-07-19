@@ -4,6 +4,7 @@
 date: "`r Sys.Date()`"
 author: "Ryan Teo"
 format: 
+  beamer: default
   revealjs:
     smaller: true
     scrollable: true
