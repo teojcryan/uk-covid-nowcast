@@ -4,12 +4,10 @@ require(readr, quietly = TRUE)
 require(data.table, quietly = TRUE)
 
 ### nhse to LTLA lookup table ------------------------------------
-#ltla_nhser <- readRDS(here::here("data", "ltla_nhser.rds"))
-
+ltla_nhser <- readRDS(here::here("data", "ltla_nhser.rds"))
 
 ### Early archived data (20200409 - 20210223) --------------------
 # credit to theosanderson
-
 date_start <- as.Date('2020-08-11')
 date_end <- as.Date('2021-02-23')
 date_lst <- seq.Date(date_start, date_end, by='days')

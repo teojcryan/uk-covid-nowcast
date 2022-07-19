@@ -1,0 +1,36 @@
+\frametitle{Test-specific case data}
+\protect\hypertarget{test-specific-case-data}{}
+\texttt{New\ cases\ by\ specimen\ date} is the sum of three separate
+data sources:
+
+\begin{enumerate}
+\tightlist
+\item
+  LFD confirmed by PCR
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Identified by LFD and confirmed by PCR within 3 days
+  \item
+    Date reflects LFD test date\\
+  \end{itemize}
+\item
+  LFD only
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Identified by LFD and not confirmed by PCR within 3 days
+  \item
+    If subsequent PCR is negative, cases will be removed
+  \end{itemize}
+\item
+  PCR only
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Identified by PCR excluding those identified by LFD within 3 days
+  \end{itemize}
+\end{enumerate}
