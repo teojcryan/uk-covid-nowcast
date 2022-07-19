@@ -1,17 +1,14 @@
 require(data.table, quietly = TRUE)
 require(dplyr, quietly = TRUE)
 require(ggplot2, quietly = TRUE)
-#require(egg, quietly = TRUE)
 require(ggpubr, quietly = TRUE)
-#require(stringr, quietly = TRUE)
-#require(lubridate, quietly = TRUE, warn.conflicts = FALSE)
 suppressMessages(require(here, quietly = TRUE))
 
 # load pre-processed data
 dt <- readRDS(here("data", "cases", "national", "merged.rds"))
 
-# data wranging --------------------------
-# extract column names for case data
+# data wrangling --------------------------
+# extract names of columns containing case data
 cases_cols <- names(dt)[grep("cases", names(dt))]
 
 #dt <- dt[specimen_date < "2022-07-01"]
@@ -19,20 +16,15 @@ delay_max <- 7 # max delay in days
 delay_max_grp <- paste0(">",as.character(delay_max))
 
 # create binning for delays > delay_max
-dt[, delay_grp := factor(ifelse(delay > delay_max, 
-                                delay_max_grp, 
-                                delay),
-                         levels = c(1:delay_max, 
-                                    delay_max_grp))]
+dt[, delay_grp := factor(ifelse(delay > delay_max, delay_max_grp, delay),
+                         levels = c(1:delay_max, delay_max_grp))]
 
-# calculate mean delay
-delay_mean <- dt[, prop := cases/sum(cases)
-                 , by = specimen_date
-][, .(mean = sum(prop*delay)),
-  by = specimen_date] 
+# calculate mean delay by specimen date
+delay_mean <- dt[, prop := cases/sum(cases), by = specimen_date
+                 ][, .(mean = sum(prop*delay)), by = specimen_date] 
 
 # sum case data by bins
-dt <- dt[, lapply(.SD, sum, na.rm=T),
+dt <- dt[, lapply(.SD, sum, na.rm=T), 
          keyby = .(specimen_date, delay_grp),
          .SDcols = cases_cols]
 
@@ -47,7 +39,8 @@ dow_label <- as_labeller(c(`1` = "Monday",
                            `6` = "Saturday",
                            `7` = "Sunday"))
 
-# plot of cases by delay -----------------------
+#
+# cases by delay -----------------------
 p_cases_delay <- dt |>
   ggplot() + 
   aes(x=specimen_date, y=cases, fill=delay_grp) +
@@ -60,7 +53,6 @@ p_cases_delay <- dt |>
 
 p_cases_delay_prop <- dt %>%
   filter(cases > 0) %>%
-  #filter(delay <= delay_max) %>%
   ggplot(aes(x=specimen_date)) +
   geom_bar(aes(y=cases, fill=delay_grp), 
            position = position_fill(reverse = TRUE), stat = 'identity', width=1) + 
@@ -87,54 +79,33 @@ p_cases_delay <- egg::ggarrange(p_cases_delay +
 
 #TODO identify distinct periods in time where delay distribution looks different
 
-# plot of delay distribution -----------------------------
-dt_delay_dist <- dt %>%
-  group_by(specimen_date) %>%
-  mutate(cases_prop = cases/sum(cases),
-         cases_cum_prop = cumsum(cases_prop)) %>%
-  group_by(delay_grp) %>%
-  summarise(mean = mean(cases_prop),
-            l = quantile(cases_prop, prob=0.025),
-            u = quantile(cases_prop, prob=0.975)) 
+# delay distribution -----------------------------
+p_delay_dist <- dt[, prop := cases/sum(cases),
+   by=specimen_date
+][, .(mean = mean(prop, na.rm=T),
+      u = quantile(prop, na.rm=T, prob = .975),
+      l = quantile(prop, na.rm=T, prob = .025)),
+  by = delay_grp
+][, ggplot(.SD, aes(x=delay_grp, y=mean, ymin=l, ymax=u)) +
+    geom_errorbar(width = .5) + 
+    geom_point() +
+    xlab("delay d (days)") + ylab(expression("P(delay = d)")) + 
+    theme_bw()]
 
-p_delay_dist <- dt_delay_dist %>%
-  ggplot() + 
-  aes(x = as.numeric(delay_grp), y = mean, ymin = l, ymax = u) + 
-  geom_ribbon(col = NA, alpha = 0.3) + 
-  geom_line() + 
-  geom_point() +
-  ylab(expression("P(delay = d)")) + xlab("time d (days)") +
-  scale_x_continuous(breaks = c(1:delay_max, delay_max+1),
-                     labels = levels(dt_delay_dist$delay_grp)) +
-  theme_bw() +
-  theme(legend.position = 'bottom')
-
-dt_delay_dist_period <- dt %>%
-  group_by(specimen_date) %>%
-  mutate(cases_prop = cases/sum(cases),
-         cases_cum_prop = cumsum(cases_prop),
-         period = factor(case_when(
-           specimen_date > as.Date("2022-01-01") ~ "2022", 
-           specimen_date > as.Date("2021-01-01") ~ "2021", 
-           TRUE ~ "2020"
-         ))) %>%
-  group_by(period, delay_grp) %>%
-  summarise(mean = mean(cases_prop),
-            l = quantile(cases_prop, prob=0.025),
-            u = quantile(cases_prop, prob=0.975)) 
-
-p_delay_dist_period <- dt_delay_dist_period %>%
-  #filter(delay <= delay_max) %>%
-  ggplot() + 
-  aes(x = as.numeric(delay_grp), y = mean, ymin = l, ymax = u, col = period, fill = period) + 
-  geom_ribbon(col = NA, alpha = 0.2) + 
-  geom_line() + 
-  geom_point() +
-  ylab(expression("P(delay = d)")) + xlab("time d (days)") +
-  scale_x_continuous(breaks = c(1:delay_max, delay_max+1),
-                     labels = levels(dt_delay_dist$delay_grp)) +
-  theme_bw() +
-  theme(legend.position = 'bottom')
+p_delay_dist_period <- dt[, year := factor(year(specimen_date))
+   ][, ':='(prop = cases/sum(cases)),
+     by = .(specimen_date, year)
+     ][, .(mean = mean(prop, na.rm=T),
+           u = quantile(prop, na.rm=T, prob = .975),
+           l = quantile(prop, na.rm=T, prob = .025)),
+       by = .(delay_grp, year)
+       ][, ggplot(.SD, aes(x=delay_grp, y=mean, ymin=l, ymax=u, col=year)) + 
+           geom_errorbar(width = .5, position = position_dodge(width = 0.3)) +
+           geom_point(position = position_dodge(width = 0.3)) + 
+           xlab("delay d (days)") + ylab(expression("P(delay = d)")) + 
+           scale_color_discrete("Year") +
+           theme_bw() + 
+           theme(legend.position = 'bottom')]
 
 ggsave(
  here::here("output", "cases-delay-dist.png"),
@@ -142,57 +113,37 @@ ggsave(
  dpi = 330, height = 8, width = 6
 )
 
-# plot of cumulative delay distribution -----------------------------
-dt_delay_dist <- dt %>%
-  group_by(date) %>%
-  mutate(cases_prop = cases/sum(cases),
-         cases_cum_prop = cumsum(cases_prop)) %>%
-  group_by(delay_grp) %>%
-  summarise(mean = mean(cases_cum_prop),
-            l = quantile(cases_cum_prop, prob=0.025),
-            u = quantile(cases_cum_prop, prob=0.975)) 
+# cumulative delay distribution -----------------------------
+p_delay_cdist <- dt[, prop := cases/sum(cases), by=specimen_date
+   ][, prop := cumsum(prop), by=specimen_date
+     ][, .(mean = mean(prop, na.rm=T),
+           u = quantile(prop, na.rm=T, prob = .975),
+           l = quantile(prop, na.rm=T, prob = .025)),
+       by = delay_grp
+       ][, ggplot(.SD, aes(x=delay_grp, y=mean, ymin=l, ymax=u)) +
+           geom_errorbar(width = .5) + 
+           geom_point() +
+           xlab("delay d (days)") + ylab(expression("P(delay <= d)")) + 
+           theme_bw()]
 
-p_delay_dist <- dt_delay_dist %>%
-  ggplot() + 
-  aes(x = as.numeric(delay_grp), y = mean, ymin = l, ymax = u) + 
-  geom_ribbon(col = NA, alpha = 0.3) + 
-  geom_line() + 
-  geom_point() +
-  ylab(expression("P(delay "<=" d)")) + xlab("time d (days)") +
-  scale_x_continuous(breaks = c(1:delay_max, delay_max+1),
-                     labels = levels(dt_delay_dist$delay_grp)) +
-  theme_bw() +
-  theme(legend.position = 'bottom')
-
-dt_delay_dist_period <- dt %>%
-  group_by(date) %>%
-  mutate(cases_prop = cases/sum(cases),
-         cases_cum_prop = cumsum(cases_prop),
-         period = factor(case_when(
-           date > as.Date("2022-01-01") ~ "2022", 
-           date > as.Date("2021-01-01") ~ "2021", 
-           TRUE ~ "2020"
-         ))) %>%
-  group_by(period, delay_grp) %>%
-  summarise(mean = mean(cases_cum_prop),
-            l = quantile(cases_cum_prop, prob=0.025),
-            u = quantile(cases_cum_prop, prob=0.975)) 
-
-p_delay_dist_period <- dt_delay_dist_period %>%
-  ggplot() + 
-  aes(x = as.numeric(delay_grp), y = mean, ymin = l, ymax = u, col = period, fill = period) + 
-  geom_ribbon(col = NA, alpha = 0.3) + 
-  geom_line() + 
-  geom_point() +
-  ylab(expression("P(delay "<=" d)")) + xlab("time d (days)") +
-  scale_x_continuous(breaks = c(1:delay_max, delay_max+1),
-                     labels = levels(dt_delay_dist$delay_grp)) +
-  theme_bw() +
-  theme(legend.position = 'bottom')
+p_delay_cdist_period <- dt[, year := factor(year(specimen_date))
+   ][, ':='(prop = cumsum(cases/sum(cases))),
+     by = .(specimen_date, year)
+     ][, .(mean = mean(prop, na.rm=T),
+           u = quantile(prop, na.rm=T, prob = .975),
+           l = quantile(prop, na.rm=T, prob = .025)),
+       by = .(delay_grp, year)
+       ][, ggplot(.SD, aes(x=delay_grp, y=mean, ymin=l, ymax=u, col=year)) + 
+            geom_errorbar(width = .5, position = position_dodge(width = 0.3)) +
+            geom_point(position = position_dodge(width = 0.3)) + 
+            xlab("delay d (days)") + ylab(expression("P(delay = d)")) + 
+            scale_color_discrete("Year") +
+            theme_bw() + 
+            theme(legend.position = 'bottom')]
    
 ggsave(
   here::here("output", "cases-delay-cum-dist.png"),
-  ggarrange(p_delay_dist, p_delay_dist_period, ncol=1),
+  ggarrange(p_delay_cdist, p_delay_cdist_period, ncol=1),
   dpi = 330, height = 8, width = 6
 )
 
@@ -223,19 +174,31 @@ dt[, grp := ifelse(cases >= 0, 1, 0)
     theme_bw() + 
     theme(legend.position = 'bottom')]
 
-# plot of extra-long delays -----------------
-days_since <- data.table(date = unique(dt$date),
-                         delay = 1 + as.numeric(max(dt$date) - unique(dt$date)))
+# extra-long delays -----------------
+dt_raw <- readRDS(here("data", "cases", "national", "merged.rds"))
 
-ggplot(dt, aes(x=date, y=delay)) +
-  geom_bin2d(bins = 116) +
-  geom_line(data = days_since, col ='red', lwd=1) +
+days_since <- data.table(specimen_date = unique(dt$specimen_date),
+                         delay = as.numeric(max(dt$specimen_date) + 7 -unique(dt$specimen_date)))
+
+p_delay_freq <- ggplot(dt_raw[cases != 0], aes(x=specimen_date, y=delay)) +
+  geom_bin2d(bins = 71) +
+  geom_line(data = days_since, col ='red', lwd=.5) +
   scale_fill_continuous("Count", type = "viridis", direction=-1) +
   theme_bw() + 
   xlab("Specimen Date") +
   ylab("Delay (days)") +
   theme(legend.position='bottom')
 
+p_update_freq <- dt_raw[cases != 0
+       ][, .N, by = report_date
+         ][, ggplot(.SD, aes(x=report_date, y=N)) + 
+             geom_bar(stat = 'identity') +
+             geom_vline(xintercept = as.Date("2021-12-03"), col='red', lty=2) +
+             geom_vline(xintercept = as.Date("2022-01-31"), col='red', lty=2) +
+             ylab("Number of updates") + xlab("Report date") + 
+             theme_bw()]
+
+ggarrange(p_delay_freq, p_update_freq)
 
 # delay by day of week -------------
 dt[, lapply(.SD, sum, na.rm=T),
