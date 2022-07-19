@@ -12,7 +12,7 @@ dt <- readRDS(here("data", "cases", "national", "merged.rds"))
 cases_cols <- names(dt)[grep("cases", names(dt))]
 
 #dt <- dt[specimen_date < "2022-07-01"]
-delay_max <- 7 # max delay in days
+delay_max <- 20 # max delay in days
 delay_max_grp <- paste0(">",as.character(delay_max))
 
 # create binning for delays > delay_max
@@ -204,18 +204,31 @@ ggarrange(p_delay_freq, p_update_freq)
 dt[, lapply(.SD, sum, na.rm=T),
    keyby = .(specimen_date, delay_grp, dow),
    .SDcols = cases_cols
-][, cases_prop := cases/sum(cases), 
-  by = .(specimen_date, dow)
+][, cases_prop := cumsum(cases/sum(cases)), 
+  by = .(specimen_date)
 ][, .(mean = mean(cases_prop, na.rm=T),
       u = quantile(cases_prop, na.rm=T, prob = .975),
       l = quantile(cases_prop, na.rm=T, prob = .025)),
   by = .(dow, delay_grp)
-][, ggplot(.SD, aes(x=delay_grp, y=mean, ymin=l, ymax=u)) + 
-    geom_point() +
-    geom_errorbar(width = 0.3) +
+][delay_grp != ">20"
+  ][, ggplot(.SD, aes(x=delay_grp, y=mean, ymin=l, ymax=u)) + 
+    geom_point(lwd=.8) +
+    geom_errorbar(width = 0.5, alpha=.5) +
     xlab("Delay (days)") + ylab(expression("P(delay = d)")) + 
+    scale_x_discrete(breaks = c(1:6, seq(0,20,7), "20")) +
+    scale_y_continuous(trans='logit') + 
     facet_wrap(~dow, label=dow_label, nrow = 2) +
     theme_bw()]
+
+dt[, lapply(.SD, sum, na.rm=T),
+   keyby = .(specimen_date, delay_grp),
+   .SDcols = cases_cols
+][, cases_prop := cumsum(cases/sum(cases)), 
+  by = .(specimen_date)
+][delay_grp %in% c(7,20)
+  ][, dcast(.SD, specimen_date ~ delay_grp)
+    ][, diff := `20`-`7`
+      ][, diff] %>% mean(na.rm=T) # quantile(na.rm=T, probs = c(0.025, .5, 0.975))
 
 # proportion of cases by delay and test type ------------
 dt[, lapply(.SD, sum, na.rm=T),
