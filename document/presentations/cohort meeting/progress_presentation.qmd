@@ -6,6 +6,7 @@ author: "Ryan Teo"
 format: 
   revealjs:
     theme: default
+    preview-links: true
     #smaller: true
 ---
 
@@ -45,6 +46,9 @@ day_label <- as_labeller(c(`1` = "Monday",
 - Incidence data suffers from reporting delays
     + reported data is regularly being updated
     + limits usefulness in real-time analysis
+
+## Dataset
+- [UK Covid-19 dashboard](https://coronavirus.data.gov.uk/details/download)
     
 ## Example
 <!--- plot data --->

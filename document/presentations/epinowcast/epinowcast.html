@@ -1,22 +1,22 @@
 <!DOCTYPE html>
 <html lang="en"><head>
-<script src="progress_presentation_files/libs/clipboard/clipboard.min.js"></script>
-<script src="progress_presentation_files/libs/quarto-html/tabby.min.js"></script>
-<script src="progress_presentation_files/libs/quarto-html/popper.min.js"></script>
-<script src="progress_presentation_files/libs/quarto-html/tippy.umd.min.js"></script>
-<link href="progress_presentation_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="progress_presentation_files/libs/quarto-html/quarto-html.min.css" rel="stylesheet">
-<link href="progress_presentation_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles"><meta charset="utf-8">
+<script src="epinowcast_files/libs/clipboard/clipboard.min.js"></script>
+<script src="epinowcast_files/libs/quarto-html/tabby.min.js"></script>
+<script src="epinowcast_files/libs/quarto-html/popper.min.js"></script>
+<script src="epinowcast_files/libs/quarto-html/tippy.umd.min.js"></script>
+<link href="epinowcast_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="epinowcast_files/libs/quarto-html/quarto-html.min.css" rel="stylesheet">
+<link href="epinowcast_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles"><meta charset="utf-8">
   <meta name="generator" content="quarto-0.9.619">
 
   <meta name="author" content="Ryan Teo">
-  <meta name="dcterms.date" content="2022-07-25">
-  <title>Nowcasting COVID-19 incidence in England</title>
+  <meta name="dcterms.date" content="2022-07-21">
+  <title>epinowcast</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
-  <link rel="stylesheet" href="progress_presentation_files/libs/revealjs/dist/reset.css">
-  <link rel="stylesheet" href="progress_presentation_files/libs/revealjs/dist/reveal.css">
+  <link rel="stylesheet" href="epinowcast_files/libs/revealjs/dist/reset.css">
+  <link rel="stylesheet" href="epinowcast_files/libs/revealjs/dist/reveal.css">
   <style>
     code{white-space: pre-wrap;}
     span.smallcaps{font-variant: small-caps;}
@@ -25,11 +25,11 @@
     div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
     ul.task-list{list-style: none;}
   </style>
-  <link rel="stylesheet" href="progress_presentation_files/libs/revealjs/dist/theme/quarto.css" id="theme">
-  <link href="progress_presentation_files/libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
-  <link href="progress_presentation_files/libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
-  <link href="progress_presentation_files/libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
-  <link href="progress_presentation_files/libs/revealjs/plugin/quarto-support/footer.css" rel="stylesheet">
+  <link rel="stylesheet" href="epinowcast_files/libs/revealjs/dist/theme/quarto.css" id="theme">
+  <link href="epinowcast_files/libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
+  <link href="epinowcast_files/libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
+  <link href="epinowcast_files/libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
+  <link href="epinowcast_files/libs/revealjs/plugin/quarto-support/footer.css" rel="stylesheet">
   <style type="text/css">
 
   .callout {
@@ -319,68 +319,115 @@
   <div class="reveal">
     <div class="slides">
 
-<section id="title-slide" class="center">
-  <h1 class="title">Nowcasting COVID-19 incidence in England</h1>
-  <p class="author">Ryan Teo</p>
-  <p class="date">2022-07-25</p>
-</section>
 
-<section id="background" class="slide level2">
-<h2>Background</h2>
+<section id="uk-covid-19-data" class="slide level2">
+<h2>UK COVID-19 data</h2>
 <ul>
-<li>Incidence data suffers from reporting delays
+<li>Publicly available from <a href="https://coronavirus.data.gov.uk/details/download">dashboard</a></li>
+<li>Target: new cases by specimen date<sup>1</sup>
 <ul>
-<li>reported data is regularly being updated</li>
-<li>limits usefulness in real-time analysis</li>
+<li>archived data from Feb 2021 onwards</li>
+<li>reported every weekday until 1/7/22, then weekly</li>
+<li>further stratified by location and age groups</li>
 </ul></li>
 </ul>
-</section>
-<section id="dataset" class="slide level2">
-<h2>Dataset</h2>
+<aside><ol class="aside-footnotes"><li id="fn1" role="doc-endnote"><p>date the sample was taken</p></li></ol></aside></section>
+<section id="section" class="slide level2">
+<h2></h2>
+
+<img data-src="epinowcast_files/figure-revealjs/unnamed-chunk-2-1.png" width="960" class="r-stretch"></section>
+<section id="distribution-of-cases-by-delay" class="slide level2">
+<h2>Distribution of cases by delay</h2>
+
+<img data-src="epinowcast_files/figure-revealjs/unnamed-chunk-3-1.png" width="960" class="r-stretch"></section>
+<section id="day-of-week" class="slide level2">
+<h2>Day of week</h2>
+
+<img data-src="epinowcast_files/figure-revealjs/unnamed-chunk-4-1.png" width="960" class="r-stretch"></section>
+<section id="test-specific-case-data" class="slide level2">
+<h2>Test-specific case data</h2>
+<p><code>New cases by specimen date</code> is the sum of three separate data sources:</p>
+<ol type="1">
+<li>LFD confirmed by PCR
 <ul>
-<li><a href="https://coronavirus.data.gov.uk/details/download">UK Covid-19 dashboard</a></li>
+<li>Identified by LFD and confirmed by PCR within 3 days</li>
+<li>Date reflects LFD test date<br>
+</li>
+</ul></li>
+<li>LFD only
+<ul>
+<li>Identified by LFD and not confirmed by PCR within 3 days</li>
+<li>If subsequent PCR is negative, cases will be removed</li>
+</ul></li>
+<li>PCR only
+<ul>
+<li>Identified by PCR excluding those identified by LFD within 3 days</li>
+</ul></li>
+</ol>
+</section>
+<section id="test-type" class="slide level2">
+<h2>Test type</h2>
+
+<img data-src="epinowcast_files/figure-revealjs/unnamed-chunk-5-1.png" width="960" class="r-stretch"></section>
+<section id="test-type-1" class="slide level2">
+<h2>Test type</h2>
+<ul>
+<li>Might be able to nowcast LFD-PCR and PCR only streams separately
+<ul>
+<li>updates for these streams are not all positive, occasionally some case definition revisions lead to large negative updates</li>
+<li>e.g.&nbsp;<a href="https://coronavirus.data.gov.uk/details/whats-new/record/8055ae4e-ba2a-450a-bff8-42e9e4d1575b">Revision to episode-based case definition</a> on 1/2/22 led to large drops in PCR only cases for a few dates (7-10/1/22) in the thousands</li>
+</ul></li>
+<li>Need a different model for LFD only stream</li>
 </ul>
 </section>
-<section id="example" class="slide level2">
-<h2>Example</h2>
-<!--- plot data --->
-</section>
-<section id="objective" class="slide level2">
-<h2>Objective</h2>
+<section id="extra-long-delays" class="slide level2">
+<h2>Extra-long delays</h2>
+
+<img data-src="epinowcast_files/figure-revealjs/unnamed-chunk-6-1.png" width="960" class="r-stretch quarto-figure-center"></section>
+<section id="extra-long-delays-1" class="slide level2">
+<h2>Extra-long delays</h2>
 <ul>
-<li>Perform a nowcast of the number of COVID-19 cases <em>by specimen date</em> in England</li>
-<li></li>
+<li>Number of updates per report date increased quite steadily till 03/12/21
+<ul>
+<li>Unsure about why this happened</li>
+</ul></li>
+<li>Large number of updates on 31/1/22
+<ul>
+<li><a href="https://coronavirus.data.gov.uk/details/whats-new/record/beb802ac-1ed2-47ac-b314-69a5c3f712b5">Updating of case definition</a> to include multiple infection episodes</li>
+<li>Cases by specimen date revised back to the beginning of the pandemic</li>
+</ul></li>
+<li>Conclusion: might be reasonable to assume a maximum delay of ~50 days?</li>
 </ul>
-</section>
-<section id="success" class="slide level2">
-<h2>Success</h2>
-</section>
-<section id="issues" class="slide level2">
-<h2>Issues</h2>
 </section>
 <section id="next-steps" class="slide level2">
 <h2>Next steps</h2>
+<ul>
+<li>Try out a basic nowcast with <code>epinowcast</code></li>
+<li>Explore further stratification by region and age</li>
+<li>Create counterfactual datasets with alternative reporting schedule (weekdaily vs weekly)</li>
+</ul>
 <div class="footer footer-default">
 
 </div>
 </section>
+
     </div>
   </div>
 
   <script>window.backupDefine = window.define; window.define = undefined;</script>
-  <script src="progress_presentation_files/libs/revealjs/dist/reveal.js"></script>
+  <script src="epinowcast_files/libs/revealjs/dist/reveal.js"></script>
   <!-- reveal.js plugins -->
-  <script src="progress_presentation_files/libs/revealjs/plugin/quarto-line-highlight/line-highlight.js"></script>
-  <script src="progress_presentation_files/libs/revealjs/plugin/pdf-export/pdfexport.js"></script>
-  <script src="progress_presentation_files/libs/revealjs/plugin/reveal-menu/menu.js"></script>
-  <script src="progress_presentation_files/libs/revealjs/plugin/reveal-menu/quarto-menu.js"></script>
-  <script src="progress_presentation_files/libs/revealjs/plugin/quarto-support/support.js"></script>
+  <script src="epinowcast_files/libs/revealjs/plugin/quarto-line-highlight/line-highlight.js"></script>
+  <script src="epinowcast_files/libs/revealjs/plugin/pdf-export/pdfexport.js"></script>
+  <script src="epinowcast_files/libs/revealjs/plugin/reveal-menu/menu.js"></script>
+  <script src="epinowcast_files/libs/revealjs/plugin/reveal-menu/quarto-menu.js"></script>
+  <script src="epinowcast_files/libs/revealjs/plugin/quarto-support/support.js"></script>
   
 
-  <script src="progress_presentation_files/libs/revealjs/plugin/notes/notes.js"></script>
-  <script src="progress_presentation_files/libs/revealjs/plugin/search/search.js"></script>
-  <script src="progress_presentation_files/libs/revealjs/plugin/zoom/zoom.js"></script>
-  <script src="progress_presentation_files/libs/revealjs/plugin/math/math.js"></script>
+  <script src="epinowcast_files/libs/revealjs/plugin/notes/notes.js"></script>
+  <script src="epinowcast_files/libs/revealjs/plugin/search/search.js"></script>
+  <script src="epinowcast_files/libs/revealjs/plugin/zoom/zoom.js"></script>
+  <script src="epinowcast_files/libs/revealjs/plugin/math/math.js"></script>
   <script>window.define = window.backupDefine; window.backupDefine = undefined;</script>
 
   <script>
@@ -390,13 +437,13 @@
       Reveal.initialize({
 'controlsAuto': true,
 'previewLinksAuto': false,
-'smaller': false,
+'smaller': true,
 'pdfSeparateFragments': false,
 'autoAnimateEasing': "ease",
 'autoAnimateDuration': 1,
 'autoAnimateUnmatched': true,
 'menu': {"side":"left","useTextContentForMissingTitles":true,"markers":false,"loadIcons":false,"custom":[{"title":"Tools","icon":"<i class=\"fas fa-gear\"></i>","content":"<ul class=\"slide-menu-items\">\n<li class=\"slide-tool-item active\" data-item=\"0\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.fullscreen(event)\"><kbd>f</kbd> Fullscreen</a></li>\n<li class=\"slide-tool-item\" data-item=\"1\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.speakerMode(event)\"><kbd>s</kbd> Speaker View</a></li>\n<li class=\"slide-tool-item\" data-item=\"2\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.overview(event)\"><kbd>o</kbd> Slide Overview</a></li>\n<li class=\"slide-tool-item\" data-item=\"3\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.overview(event)\"><kbd>e</kbd> PDF Export Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"4\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.keyboardHelp(event)\"><kbd>?</kbd> Keyboard Help</a></li>\n</ul>"}],"openButton":true},
-'smaller': false,
+'smaller': true,
  
         // Display controls in the bottom right corner
         controls: false,
@@ -518,7 +565,7 @@
         hideCursorTime: 5000,
 
         // Opens links in an iframe preview overlay
-        previewLinks: true,
+        previewLinks: false,
 
         // Transition style (none/fade/slide/convex/concave/zoom)
         transition: 'none',
