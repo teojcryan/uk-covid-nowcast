@@ -12,7 +12,7 @@ dt <- readRDS(here("data", "cases", "national", "merged.rds"))
 cases_cols <- names(dt)[grep("cases", names(dt))]
 
 #dt <- dt[specimen_date < "2022-07-01"]
-delay_max <- 20 # max delay in days
+delay_max <- 7 # max delay in days
 delay_max_grp <- paste0(">",as.character(delay_max))
 
 # create binning for delays > delay_max
@@ -71,11 +71,11 @@ p_cases_delay <- egg::ggarrange(p_cases_delay +
                                   theme(legend.position = "none"),
                                 p_cases_delay_prop, ncol=1)
 
-# ggsave(
-#  here::here("output", "cases-delay-england.png"),
-#  p_cases_delay,
-#  dpi = 330, height = 8, width = 12
-# )
+ggsave(
+ here::here("output", "cases-delay-england.png"),
+ p_cases_delay,
+ dpi = 330, height = 8, width = 12
+)
 
 #TODO identify distinct periods in time where delay distribution looks different
 
@@ -108,7 +108,7 @@ p_delay_dist_period <- dt[, year := factor(year(specimen_date))
            theme(legend.position = 'bottom')]
 
 ggsave(
- here::here("output", "cases-delay-dist.png"),
+ here::here("output", "cases-delay-dist-yr.png"),
  ggarrange(p_delay_dist, p_delay_dist_period, ncol=1),
  dpi = 330, height = 8, width = 6
 )
@@ -142,9 +142,15 @@ p_delay_cdist_period <- dt[, year := factor(year(specimen_date))
             theme(legend.position = 'bottom')]
    
 ggsave(
-  here::here("output", "cases-delay-cum-dist.png"),
+  here::here("output", "cases-delay-cdist-yr.png"),
   ggarrange(p_delay_cdist, p_delay_cdist_period, ncol=1),
   dpi = 330, height = 8, width = 6
+)
+
+ggsave(
+  here::here("output", "cases-delay-dist.png"),
+  ggarrange(p_delay_dist, p_delay_cdist, ncol=2),
+  dpi = 330, height = 4, width = 8
 )
 
 # exploratory plots for negative updates -------------------
@@ -198,25 +204,28 @@ p_update_freq <- dt_raw[cases != 0
              ylab("Number of updates") + xlab("Report date") + 
              theme_bw()]
 
-ggarrange(p_delay_freq, p_update_freq)
+ggsave(
+  here::here("output", "long-delay-dist.png"),
+  ggarrange(p_delay_freq, p_update_freq, ncol=2),
+  dpi = 330, height = 4, width = 8
+)
 
 # delay by day of week -------------
 dt[, lapply(.SD, sum, na.rm=T),
    keyby = .(specimen_date, delay_grp, dow),
    .SDcols = cases_cols
-][, cases_prop := cumsum(cases/sum(cases)), 
+][, cases_prop := cases/sum(cases), 
   by = .(specimen_date)
 ][, .(mean = mean(cases_prop, na.rm=T),
       u = quantile(cases_prop, na.rm=T, prob = .975),
       l = quantile(cases_prop, na.rm=T, prob = .025)),
   by = .(dow, delay_grp)
-][delay_grp != ">20"
-  ][, ggplot(.SD, aes(x=delay_grp, y=mean, ymin=l, ymax=u)) + 
+][, ggplot(.SD, aes(x=delay_grp, y=mean, ymin=l, ymax=u)) + 
     geom_point(lwd=.8) +
     geom_errorbar(width = 0.5, alpha=.5) +
     xlab("Delay (days)") + ylab(expression("P(delay = d)")) + 
     scale_x_discrete(breaks = c(1:6, seq(0,20,7), "20")) +
-    scale_y_continuous(trans='logit') + 
+    #scale_y_continuous(trans='logit') + 
     facet_wrap(~dow, label=dow_label, nrow = 2) +
     theme_bw()]
 
@@ -231,7 +240,7 @@ dt[, lapply(.SD, sum, na.rm=T),
       ][, diff] %>% mean(na.rm=T) # quantile(na.rm=T, probs = c(0.025, .5, 0.975))
 
 # proportion of cases by delay and test type ------------
-dt[, lapply(.SD, sum, na.rm=T),
+p_test_type <- dt[, lapply(.SD, sum, na.rm=T),
    keyby = .(specimen_date, delay_grp),
    .SDcols = cases_cols
 ][, melt(.SD, 
@@ -254,6 +263,12 @@ dt[, lapply(.SD, sum, na.rm=T),
     xlab("Delay (days)") + ylab(expression("P(delay = d)")) + 
     theme_bw() + 
     theme(legend.position = 'bottom')]
+
+ggsave(
+  here::here("output", "delay-dist-test-type.png"),
+  p_test_type,
+  dpi = 330, height = 4, width = 12
+)
 
 # cases by test type and day of week -----------
 dt[, lapply(.SD, sum, na.rm=T),
