@@ -4,7 +4,7 @@ require(readr, quietly = TRUE)
 require(data.table, quietly = TRUE)
 
 ### nhse to LTLA lookup table ------------------------------------
-ltla_nhser <- readRDS(here::here("data", "ltla_nhser.rds"))
+#ltla_nhser <- readRDS(here::here("data", "ltla_nhser.rds"))
 
 ### Early archived data (20200409 - 20210223) --------------------
 # credit to theosanderson

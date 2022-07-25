@@ -3,9 +3,11 @@ require(dplyr, quietly = TRUE, warn.conflicts = FALSE)
 require(readr, quietly = TRUE)
 require(data.table, quietly = TRUE)
 
-age_gps <- c(paste(formatC(seq(0, 85, 5), width=2, flag='0'),
-                   formatC(seq(4, 89, 5), width=2, flag='0'),
-                   sep='_'), "90+")
+age_gp <- data.table(age_5y = c(paste(formatC(seq(0, 85, 5), width=2, flag='0'),
+                                      formatC(seq(4, 89, 5), width=2, flag='0'),
+                                      sep='_'), "90+"),
+                     age_gp = c("00-04", rep("05-14", 2), rep("15-34", 4),
+                                rep("35-59", 5), rep("60-79", 4), rep("80+", 3)))
 
 ### COVID-19 dashboard archived data (20210224 - ) ------------------- 
 # set start and end date
@@ -27,12 +29,19 @@ for (n in 1:n_days){
       "release=", date
     ))
     
-    dt_clean <- dt[, !c("areaCode", "areaType", "rollingSum", "rollingRate")
-      ][age %in% age_gps]
+    all_age <- dt[age %in% age_gp$age_5y, .(cases = sum(cases)), by = .(date, areaName)
+                  ][, age_gp := "00+"]
+    setcolorder(all_age, c("date", "areaName", "age_gp", "cases"))
     
-    saveRDS(dt_clean, 
+    by_age <- dt[, .(cases = sum(cases)), by = .(date, areaName, age)
+                 ][age_gp, on = .(age = age_5y)
+                   ][, .(cases = sum(cases)), by = .(date, areaName, age_gp)]
+    
+    saveRDS(rbind(all_age, by_age), 
             file = here::here("data", "cases", "region_age", paste0(date, ".rds")))
   }, error = function(e) { skip_to_next <- TRUE })
   
   if (skip_to_next) { next }
 }
+
+

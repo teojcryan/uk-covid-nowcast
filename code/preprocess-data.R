@@ -25,15 +25,14 @@ setcolorder(dt, c("specimen_date", cases_cols, "report_date"))      # reorder co
 dt <- dt[order(specimen_date, report_date)]                         # sort data by specimen date
 
 # compute delay and incremental cases from cumulative
-dt[,':='(delay = as.numeric(report_date - specimen_date))
-][
-  , by = c('specimen_date')
-  , (cases_cols) := lapply(.SD, function(x) {ifelse(x == first(x), x, x - shift(x, type='lag'))})
-  , .SDcols = cases_cols
-]
-
-dt <- dt[delay > 0] # remove dates with same-day reporting or no change
+# dt[,':='(delay = as.numeric(report_date - specimen_date))
+# ][
+#   , by = c('specimen_date')
+#   , (cases_cols) := lapply(.SD, function(x) {ifelse(x == first(x), x, x - shift(x, type='lag'))})
+#   , .SDcols = cases_cols
+# ]
+# 
+# dt <- dt[delay > 0] # remove dates with same-day reporting or no change
 #dt <- dt[region == "England"] # filter only England data
 
-saveRDS(dt, 
-        here::here(paste0("data/cases/national/merged.rds")))
+saveRDS(dt, here::here("data", "cases", "national", "merged.rds"))
