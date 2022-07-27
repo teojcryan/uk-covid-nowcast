@@ -12,20 +12,24 @@ bibliography: references.bib
 
 # Introduction
 
+<!--- Present the nature and scope of problem investigated --->
+Epidemiological indicators often suffer from reporting delays, including delays between disease onset, testing, and reporting. This results in newly reported indicators being a lagging indicator of past events. 
+
+<!--- Literature review --->
+
 [@höhle2014]
 
 [@lawless1994]
 
 [@schneble2021]
 
-[@seaman2022]
+One study  [@seaman2022]
 
 [@abbott2021]
 
 [@günther2021]
 
 ![7-day average new COVID-19 cases by specimen date](images/nowcast.png){fig-align="center"}
-
 Colors represent data as it was reported at various reporting dates.
 
 ## Objective
