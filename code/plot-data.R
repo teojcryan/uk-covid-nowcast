@@ -12,8 +12,11 @@ dt <- readRDS(here("data", "cases", "national", "merged.rds"))
 cases_cols <- names(dt)[grep("cases", names(dt))]
 
 #dt <- dt[specimen_date < "2022-07-01"]
-delay_max <- 7 # max delay in days
+delay_max <- 30 # max delay in days
 delay_max_grp <- paste0(">",as.character(delay_max))
+
+# compute delay
+dt[, delay := as.numeric(report_date - specimen_date)]
 
 # create binning for delays > delay_max
 dt[, delay_grp := factor(ifelse(delay > delay_max, delay_max_grp, delay),
@@ -24,7 +27,7 @@ delay_mean <- dt[, prop := cases/sum(cases), by = specimen_date
                  ][, .(mean = sum(prop*delay)), by = specimen_date] 
 
 # sum case data by bins
-dt <- dt[, lapply(.SD, sum, na.rm=T), 
+dt <- dt[, lapply(.SD, first), 
          keyby = .(specimen_date, delay_grp),
          .SDcols = cases_cols]
 
@@ -80,17 +83,16 @@ ggsave(
 #TODO identify distinct periods in time where delay distribution looks different
 
 # delay distribution -----------------------------
-p_delay_dist <- dt[, prop := cases/sum(cases),
-   by=specimen_date
-][, .(mean = mean(prop, na.rm=T),
-      u = quantile(prop, na.rm=T, prob = .975),
-      l = quantile(prop, na.rm=T, prob = .025)),
-  by = delay_grp
-][, ggplot(.SD, aes(x=delay_grp, y=mean, ymin=l, ymax=u)) +
-    geom_errorbar(width = .5) + 
-    geom_point() +
-    xlab("delay d (days)") + ylab(expression("P(delay = d)")) + 
-    theme_bw()]
+p_delay_dist <- dt[, prop := cases/max(cases), by = specimen_date
+                   ][, .(mean = mean(prop, na.rm=T),
+                         u = quantile(prop, na.rm=T, prob = .975),
+                         l = quantile(prop, na.rm=T, prob = .025)),
+                     by = delay_grp
+                    ][, ggplot(.SD, aes(x=delay_grp, y=mean, ymin=l, ymax=u)) +
+                        geom_errorbar(width = .5) + 
+                        geom_point() +
+                        xlab("delay d (days)") + ylab(expression("P(delay = d)")) + 
+                        theme_bw()]
 
 p_delay_dist_period <- dt[, year := factor(year(specimen_date))
    ][, ':='(prop = cases/sum(cases)),
