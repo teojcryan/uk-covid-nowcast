@@ -1,0 +1,3 @@
+"model","samples","max_rhat","divergent_transitions","per_divergent_transitions","max_treedepth","no_at_max_treedepth","per_at_max_treedepth","run_time","nowcast_date"
+"Reference: Fixed, Report: Fixed",4000,1,0,0,6,1421,0.35525,33.4,2022-02-22
+"Reference: Fixed, Report: Day of Week",4000,1.54,303,0.07575,12,900,0.225,508.6,2022-02-22
