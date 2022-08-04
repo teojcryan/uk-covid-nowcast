@@ -39,5 +39,5 @@ vignettes/*.pdf
 .Renviron
 
 # raw data files
-data/observations/report_date
+data/observations/reported
 code/archive
