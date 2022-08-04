@@ -67,11 +67,9 @@ saveRDS(dt_pub,
 uk_holidays <- fromJSON(file = "https://www.gov.uk/bank-holidays.json")
 eng_holidays <- uk_holidays$`england-and-wales`$events # England and Wales only
 
-holidays_dt <- rbindlist(eng_holidays)[
-  , date := as.Date(date)
-  ][date >= "2022-01-01" & date <= "2022-12-31"] # include holidays in 2022 only
+holidays_dt <- rbindlist(eng_holidays)[, date := as.Date(date)]
 
-holidays_list <- data.table(date = seq(as.Date("2022-01-01"), as.Date("2022-12-31"), by = "day"))[
+holidays_list <- data.table(date = seq(as.Date("2019-12-01"), as.Date("2022-12-31"), by = "day"))[
   , holiday := ifelse(date %in% holidays_dt$date, TRUE, FALSE)]
 
 saveRDS(holidays_list,
