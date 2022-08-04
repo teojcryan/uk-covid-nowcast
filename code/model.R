@@ -1,5 +1,5 @@
-#' Nowcast models
-nowcast_model <- function(obs, reference, report, max_delay, priors, ...) {
+# Nowcast models
+nowcast_model <- function(obs, reference, report, max_delay, priors = NULL, ...) {
   
   # Set up parallel
   ncores <- parallel::detectCores(logical = FALSE)
@@ -12,14 +12,14 @@ nowcast_model <- function(obs, reference, report, max_delay, priors, ...) {
     holidays = "holiday"
   )
   
-  multithread_model <- enw_model(threads = TRUE)
+  multithread_model <- enw_model(threads = TRUE, verbose = FALSE)
   report_module_dow <- enw_report(~ (1 | day_of_week), data = pobs)
   
   fit <- enw_fit_opts(
     save_warmup = FALSE, output_loglik = TRUE, pp = TRUE,
     chains = ncores / 2, threads_per_chain = ncores / 2, 
     iter_sampling = 1000, iter_warmup = 1000,
-    show_messages = FALSE, refresh = 0, max_treedepth = 12, adapt_delta = .975,
+    show_messages = FALSE, refresh = 0, max_treedepth = 15, adapt_delta = .99,
     ...
   )
   
@@ -30,13 +30,22 @@ nowcast_model <- function(obs, reference, report, max_delay, priors, ...) {
       model = multithread_model
     )
   } else if (reference == "fixed" & report == "dow"){
-    nowcast <- epinowcast(
-      pobs,
-      fit = fit,
-      report = report_module_dow,
-      model = multithread_model,
-      priors = priors
-    )
+    if (!is.null(priors)){
+      nowcast <- epinowcast(
+        pobs,
+        fit = fit,
+        report = report_module_dow,
+        model = multithread_model,
+        priors = priors
+      )
+    } else {
+      nowcast <- epinowcast(
+        pobs,
+        fit = fit,
+        report = report_module_dow,
+        model = multithread_model
+      )
+    }
   }
   
   return(nowcast)
