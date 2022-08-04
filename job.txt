@@ -1,0 +1,12 @@
+#!/bin/bash
+#SBATCH --job-name=ma931      # create a short name for your job
+#SBATCH --nodes=4
+#SBATCH --ntasks-per-node=48
+#SBATCH --mem-per-cpu=3700
+#SBATCH --mail-type=all          # send email on start, end and fault
+#SBATCH --mail-user=u2128816@live.warwick.ac.uk
+
+module purge
+module load GCC/10.3.0 OpenMPI/4.1.1 R/4.1.0
+
+Rscript code/main.R &> out.txt
