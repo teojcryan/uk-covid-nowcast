@@ -40,3 +40,4 @@ vignettes/*.pdf
 
 # raw data files
 data/observations/report_date
+code/archive
