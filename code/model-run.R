@@ -120,7 +120,7 @@ for (i in 1:length(date_list)){
               file = here("data", "nowcasts", "all.csv"),
               append = TRUE,
               row.names = FALSE,
-              col.names = !file.exists(here("data", "nowcasts", "all.csv")))
+              col.names = !file.exists(here("data", "nowcasts.csv")))
   
   # Update latest data
   latest <- obs_all |>
@@ -138,7 +138,7 @@ for (i in 1:length(date_list)){
               file = here("data", "scores", "all.csv"),
               append = TRUE,
               row.names = FALSE,
-              col.names = !file.exists(here("data", "scores", "all.csv")))
+              col.names = !file.exists(here("data", "scores.csv")))
   
   # Extract diagnostics
   diagnostics <- map(nowcasts, 
@@ -154,7 +154,7 @@ for (i in 1:length(date_list)){
               file = here("data", "diagnostics", "all.csv"),
               append = TRUE,
               row.names = FALSE,
-              col.names = !file.exists(here("data", "diagnostics", "all.csv")))
+              col.names = !file.exists(here("data", "diagnostics.csv")))
   
   # print progress
   cat(paste0("Progress: ", round(100*i/length(date_list), 3), "%", "\n",
