@@ -4,7 +4,7 @@ nowcast_model <- function(obs, reference, report, max_delay, priors = NULL, ...)
   # Set up parallel
   #ncores <- parallel::detectCores(logical = FALSE)
   #threads <- 1
-  #options(mc.cores = ncores / 2)
+  options(mc.cores = 16)
   
   pobs <- enw_preprocess_data(
     obs,
