@@ -2,9 +2,9 @@
 nowcast_model <- function(obs, reference, report, max_delay, priors = NULL, ...) {
   
   # Set up parallel
-  ncores <- parallel::detectCores(logical = FALSE)
-  threads <- ncores / 2
-  options(mc.cores = ncores / 2)
+  #ncores <- parallel::detectCores(logical = FALSE)
+  #threads <- 1
+  #options(mc.cores = ncores / 2)
   
   pobs <- enw_preprocess_data(
     obs,
@@ -17,7 +17,7 @@ nowcast_model <- function(obs, reference, report, max_delay, priors = NULL, ...)
   
   fit <- enw_fit_opts(
     save_warmup = FALSE, output_loglik = TRUE, pp = TRUE,
-    chains = ncores / 2, threads_per_chain = ncores / 2, 
+    chains = 4, threads_per_chain = 4, 
     iter_sampling = 1000, iter_warmup = 1000,
     show_messages = FALSE, refresh = 0, max_treedepth = 15, adapt_delta = .99,
     ...
