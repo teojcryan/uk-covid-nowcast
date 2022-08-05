@@ -117,7 +117,7 @@ for (i in 1:length(date_list)){
   
   # Store nowcasts
   write.table(summarised_nowcasts,
-              file = here("data", "nowcasts", "all.csv"),
+              file = here("data", "nowcasts.csv"),
               append = TRUE,
               row.names = FALSE,
               col.names = !file.exists(here("data", "nowcasts.csv")))
@@ -135,7 +135,7 @@ for (i in 1:length(date_list)){
   )
   
   write.table(score,
-              file = here("data", "scores", "all.csv"),
+              file = here("data", "scores.csv"),
               append = TRUE,
               row.names = FALSE,
               col.names = !file.exists(here("data", "scores.csv")))
@@ -151,7 +151,7 @@ for (i in 1:length(date_list)){
   
   # Store diagnostics
   write.table(diagnostics,
-              file = here("data", "diagnostics", "all.csv"),
+              file = here("data", "diagnostics.csv"),
               append = TRUE,
               row.names = FALSE,
               col.names = !file.exists(here("data", "diagnostics.csv")))
