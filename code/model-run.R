@@ -147,7 +147,7 @@ for (i in 1:length(date_list)){
                        out <- x[, nowcast_date := max_date][,`samples`:`nowcast_date`]
                        return(out)
                      })
-  diagnostics <- rbindlist(diag, idcol = "model", use.names = TRUE)
+  diagnostics <- rbindlist(diagnostics, idcol = "model", use.names = TRUE)
   
   # Store diagnostics
   write.table(diagnostics,
