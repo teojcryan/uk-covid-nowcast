@@ -1,8 +1,8 @@
-# Packages ----------------------------------------------------------------
+  # Packages ----------------------------------------------------------------
 require(epinowcast, quietly = TRUE)
 require(data.table, quietly = TRUE)
 require(purrr, quietly = TRUE, warn.conflicts = FALSE)
-require(scoringutils, quietly = TRUE, warn.conflicts = FALSE)
+suppressMessages(require(scoringutils, quietly = TRUE))
 suppressMessages(require(here, quietly = TRUE))
 source(here("code", "model.R"))
 
