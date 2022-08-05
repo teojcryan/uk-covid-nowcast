@@ -3,6 +3,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=16
 #SBATCH --mem-per-cpu=3700
+#SBATCH --time=48:00:00
 #SBATCH --mail-type=all          # send email on start, end and fault
 #SBATCH --mail-user=u2128816@live.warwick.ac.uk
 
