@@ -20,7 +20,7 @@ holidays <- readRDS(here::here("data", "observations", "holidays.rds"))
 
 # Set parameters ----------------------------------------------------------
 d_max <- 10                              # max delay
-days_included <- 21                      # length of training set
+days_included <- 42                      # length of training set
 date_latest <- max(obs_all$report_date)  # latest report date available, "ground truth"
 
 date_start <- as.Date("2022-02-01") + days_included
@@ -47,6 +47,7 @@ print(paste("Model fitting started at", Sys.time()))
 # Iterate over dates in range
 for (i in 1:length(date_list)){
   date_nowcast <- date_list[i] 
+  cat(paste("===== Nowcast Date:", date_nowcast, "=====", "\n"))
   
   # Update observations based on nowcast date
   obs_all_i <- obs_all |>
@@ -62,6 +63,7 @@ for (i in 1:length(date_list)){
     enw_filter_reference_dates(include_days = days_included)
   
   # Model 1: Reference fixed, report fixed
+  cat(paste("===== Model 1 =====", "\n"))
   nowcast <- nowcast_model(obs_all_i, 
                            report = "fixed", 
                            reference = "fixed", 
@@ -75,6 +77,7 @@ for (i in 1:length(date_list)){
   priors[, sd := sd * 5]
   
   # Model 2: Reference fixed, report dow
+  cat(paste("===== Model 2 =====", "\n"))
   dow_nowcast <- nowcast_model(obs_all_i, 
                                report = "dow", 
                                reference = "fixed", 
@@ -82,6 +85,7 @@ for (i in 1:length(date_list)){
                                max_delay = d_max)
   
   # Model 3: Model 2 + Holidays
+  cat(paste("===== Model 3 =====", "\n"))
   hol_nowcast <- nowcast_model(obs_hol_i, 
                                report = "dow", 
                                reference = "fixed", 
@@ -89,6 +93,7 @@ for (i in 1:length(date_list)){
                                max_delay = d_max)
   
   # Model 4: Model 2 on weekly reported data
+  cat(paste("===== Model 4 =====", "\n"))
   wkrep_nowcast <- nowcast_model(obs_wk_i, 
                                  report = "dow", 
                                  reference = "fixed", 
@@ -117,10 +122,11 @@ for (i in 1:length(date_list)){
   
   # Store nowcasts
   write.table(summarised_nowcasts,
-              file = here("data", "nowcasts.csv"),
+              file = here("data", "run2", "nowcasts.csv"),
+              sep = ",",
               append = TRUE,
               row.names = FALSE,
-              col.names = !file.exists(here("data", "nowcasts.csv")))
+              col.names = !file.exists(here("data", "run2", "nowcasts.csv")))
   
   # Update latest data
   latest <- obs_all |>
@@ -135,10 +141,11 @@ for (i in 1:length(date_list)){
   )
   
   write.table(score,
-              file = here("data", "scores.csv"),
+              file = here("data", "run2", "scores.csv"),
+              sep = ",",
               append = TRUE,
               row.names = FALSE,
-              col.names = !file.exists(here("data", "scores.csv")))
+              col.names = !file.exists(here("data", "run2", "scores.csv")))
   
   # Extract diagnostics
   diagnostics <- map(nowcasts, 
@@ -151,12 +158,13 @@ for (i in 1:length(date_list)){
   
   # Store diagnostics
   write.table(diagnostics,
-              file = here("data", "diagnostics.csv"),
+              file = here("data", "run2", "diagnostics.csv"),
+              sep = ",",
               append = TRUE,
               row.names = FALSE,
-              col.names = !file.exists(here("data", "diagnostics.csv")))
+              col.names = !file.exists(here("data", "run2", "diagnostics.csv")))
   
   # print progress
   cat(paste0("Progress: ", round(100*i/length(date_list), 3), "%", "\n",
-             "Time elapsed: ", round(as.numeric(difftime(Sys.time(), time_start, units = "min")),3), " mins")) 
+             "Time elapsed: ", round(as.numeric(difftime(Sys.time(), time_start, units = "min")),3), " mins", "\n")) 
 }
