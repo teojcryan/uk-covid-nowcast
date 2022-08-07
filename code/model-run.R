@@ -19,7 +19,7 @@ holidays <- readRDS(here::here("data", "observations", "holidays.rds"))
 
 # Set parameters ----------------------------------------------------------
 d_max <- 10                              # max delay
-days_included <- 35                      # length of training set
+days_included <- 28                      # length of training set
 date_latest <- max(obs_all$report_date)  # latest report date available, "ground truth"
 run_name <- "run1"   # Name of run
 
