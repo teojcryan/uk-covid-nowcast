@@ -18,7 +18,7 @@ nowcast_model <- function(obs, reference, report, max_delay, priors = NULL, ...)
   fit <- enw_fit_opts(
     save_warmup = FALSE, output_loglik = TRUE, pp = TRUE,
     chains = 4, threads_per_chain = 4, 
-    iter_sampling = 1000, iter_warmup = 500,
+    iter_sampling = 1000, iter_warmup = 1000,
     show_messages = FALSE, refresh = 0, max_treedepth = 15, adapt_delta = .99,
     ...
   )

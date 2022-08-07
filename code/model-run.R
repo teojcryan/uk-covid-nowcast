@@ -12,16 +12,16 @@ obs_all <- readRDS(here::here("data", "observations", "all.rds"))[
   , c('reference_date', 'report_date', 'confirm')]
 
 # Filter weekly reports on Wednesday only
-obs_wk <- copy(obs_all)[, dow := wday(report_date)
-][dow == 4][, dow := NULL]
+obs_wk <- copy(obs_all)[, dow := wday(report_date)][dow == 4][, dow := NULL]
 
 # Holidays
 holidays <- readRDS(here::here("data", "observations", "holidays.rds"))
 
 # Set parameters ----------------------------------------------------------
 d_max <- 10                              # max delay
-days_included <- 42                      # length of training set
+days_included <- 35                      # length of training set
 date_latest <- max(obs_all$report_date)  # latest report date available, "ground truth"
+run_name <- "run1"   # Name of run
 
 date_start <- as.Date("2022-02-01") + days_included
 date_end <- as.Date("2022-07-01")
@@ -102,10 +102,10 @@ for (i in 1:length(date_list)){
   
   # Summarise nowcasts
   nowcasts <- list(
-    "Reference: Fixed, Report: Fixed" = nowcast,
-    "Reference: Fixed, Report: Day of Week" = dow_nowcast,
-    "Holidays" = hol_nowcast,
-    "Weekly reporting" = wkrep_nowcast
+    "1" = nowcast,
+    "2" = dow_nowcast,
+    "3" = hol_nowcast,
+    "4" = wkrep_nowcast
   )
   
   summarised_nowcasts <- map(
@@ -122,11 +122,11 @@ for (i in 1:length(date_list)){
   
   # Store nowcasts
   write.table(summarised_nowcasts,
-              file = here("data", "run2", "nowcasts.csv"),
+              file = here("data", run_name, "nowcasts.csv"),
               sep = ",",
               append = TRUE,
               row.names = FALSE,
-              col.names = !file.exists(here("data", "run2", "nowcasts.csv")))
+              col.names = !file.exists(here("data", run_name, "nowcasts.csv")))
   
   # Update latest data
   latest <- obs_all |>
@@ -141,11 +141,11 @@ for (i in 1:length(date_list)){
   )
   
   write.table(score,
-              file = here("data", "run2", "scores.csv"),
+              file = here("data", run_name, "scores.csv"),
               sep = ",",
               append = TRUE,
               row.names = FALSE,
-              col.names = !file.exists(here("data", "run2", "scores.csv")))
+              col.names = !file.exists(here("data", run_name, "scores.csv")))
   
   # Extract diagnostics
   diagnostics <- map(nowcasts, 
@@ -158,11 +158,11 @@ for (i in 1:length(date_list)){
   
   # Store diagnostics
   write.table(diagnostics,
-              file = here("data", "run2", "diagnostics.csv"),
+              file = here("data", run_name, "diagnostics.csv"),
               sep = ",",
               append = TRUE,
               row.names = FALSE,
-              col.names = !file.exists(here("data", "run2", "diagnostics.csv")))
+              col.names = !file.exists(here("data", run_name, "diagnostics.csv")))
   
   # print progress
   cat(paste0("Progress: ", round(100*i/length(date_list), 3), "%", "\n",
