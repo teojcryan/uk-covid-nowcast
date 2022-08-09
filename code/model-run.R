@@ -21,7 +21,7 @@ holidays <- readRDS(here::here("data", "observations", "holidays.rds"))
 d_max <- 10                              # max delay
 days_included <- 21                      # length of training set
 date_latest <- max(obs_all$report_date)  # latest report date available, "ground truth"
-run_name <- "run0"   # Name of run
+run_name <- "run3"   # Name of run
 
 date_start <- as.Date("2022-02-01") + days_included
 date_end <- as.Date("2022-07-01")
@@ -30,82 +30,80 @@ date_list <- seq(date_start, date_end, by = "days") # list of dates in range
 # Prepare dates -----------------------------------------------------------
 obs_all <- enw_complete_dates(obs_all, max_delay = d_max)
 
-# Week day reporting, incl holidays
+# 1. Week day reporting, incl holidays
 obs_hol <- merge(obs_all, holidays, by.x = "report_date", by.y = "date")
 
-# Week day reporting, excl holidays
+# 2. Week day reporting, excl holidays
 obs_all[, holiday := FALSE]
 
-# Week day reporting, excl holidays
+  # apply variable to identify weekends
+obs_all[, weekend := ifelse(wday(report_date) %in% c(1,7), TRUE, FALSE)]
+
+# 3. Weekly reporting, excl holidays
 obs_wk <- enw_complete_dates(obs_wk, max_delay = d_max)
 obs_wk[, holiday := FALSE]
 
-# Run models -------------------------------------------------------------
+  # include variable to track reporting dates (Wednesdays)
+obs_wk[, report_possible := ifelse(wday(report_date) == 4, TRUE, FALSE)]
 
+# Run models -------------------------------------------------------------
 time_start <- Sys.time()
-print(paste("Model fitting started at", Sys.time()))
+print(paste("Model fitting started at", time_start))
+
 # Iterate over dates in range
 for (i in 1:length(date_list)){
   date_nowcast <- date_list[i] 
   cat(paste("===== Nowcast Date:", date_nowcast, "=====", "\n"))
   
-  # Update observations based on nowcast date
-  obs_all_i <- obs_all |>
-    enw_filter_report_dates(latest_date = date_nowcast) |>
-    enw_filter_reference_dates(include_days = days_included)
+  # Filter observations based on nowcast date
+  obs_all_i <- filter_obs(obs_all, date_nowcast, days_included)
+  obs_hol_i <- filter_obs(obs_hol, date_nowcast, days_included)
+  obs_wk_i <- filter_obs(obs_wk, date_nowcast, days_included)
   
-  obs_hol_i <- obs_hol |>
-    enw_filter_report_dates(latest_date = date_nowcast) |>
-    enw_filter_reference_dates(include_days = days_included)
+  # Set up multithreading
+  ncores <- parallel::detectCores()
+  nchains <- 2
+  threads <- ncores/nchains
+  options(mc.cores = ncores)
   
-  obs_wk_i <- obs_wk |>
-    enw_filter_report_dates(latest_date = date_nowcast) |>
-    enw_filter_reference_dates(include_days = days_included)
+  # Model fitting options
+  fit <- enw_fit_opts(
+    save_warmup = FALSE, output_loglik = TRUE, pp = TRUE,
+    chains = nchains, threads_per_chain = threads, 
+    iter_sampling = 1000, iter_warmup = 1000,
+    show_messages = FALSE, refresh = 0, max_treedepth = 15, adapt_delta = .99
+  )
+  
+  # Compile nowcasting model
+  multithread_model <- enw_model(threads = TRUE, verbose = FALSE)
   
   # Model 1: Reference fixed, report fixed
   cat(paste("===== Model 1 =====", "\n"))
-  nowcast <- nowcast_model(obs_all_i, 
-                           report = "fixed", 
-                           reference = "fixed", 
-                           max_delay = d_max)
+  nowcast <- nowcast_model(obs_all_i, "fixed", d_max, fit, multithread_model)
   
-  priors <- summary(
-    nowcast,
-    type = "fit",
-    variables = c( "refp_mean_int", "refp_sd_int", "sqrt_phi")
-  )
-  priors[, sd := sd * 5]
-  
-  # Model 2: Reference fixed, report dow
+  # Model 2: Reference fixed, report weekend
   cat(paste("===== Model 2 =====", "\n"))
-  dow_nowcast <- nowcast_model(obs_all_i, 
-                               report = "dow", 
-                               reference = "fixed", 
-                               priors = priors, 
-                               max_delay = d_max)
-  
-  # Model 3: Model 2 + Holidays
+  wknd_nowcast <- nowcast_model(obs_all_i, "wknd", d_max, fit, multithread_model)
+
+  # Model 3: Reference fixed, report day of week
   cat(paste("===== Model 3 =====", "\n"))
-  hol_nowcast <- nowcast_model(obs_hol_i, 
-                               report = "dow", 
-                               reference = "fixed", 
-                               priors = priors, 
-                               max_delay = d_max)
+  dow_nowcast <- nowcast_model(obs_all_i, "dow", d_max, fit, multithread_model)
   
-  # Model 4: Model 2 on weekly reported data
+  # Model 4: Reference fixed, report day of week + holidays
   cat(paste("===== Model 4 =====", "\n"))
-  wkrep_nowcast <- nowcast_model(obs_wk_i, 
-                                 report = "dow", 
-                                 reference = "fixed", 
-                                 priors = priors, 
-                                 max_delay = d_max)
+  hol_nowcast <- nowcast_model(obs_hol_i, "dow", d_max, fit, multithread_model)
+  
+  # Model 5: Reference fixed, report on reporting date
+  cat(paste("===== Model 5 =====", "\n"))
+  wkly_nowcast <- nowcast_model(obs_wk_i, "wkly", d_max, fit, multithread_model)
   
   # Summarise nowcasts
   nowcasts <- list(
-    "1" = nowcast,
-    "2" = dow_nowcast,
-    "3" = hol_nowcast,
-    "4" = wkrep_nowcast
+    "Fixed" = nowcast,
+    "Weekend" = wknd_nowcast,
+    "Dayofweek" = dow_nowcast,
+    "Holiday" = hol_nowcast,
+    "Weekly" = wkly_nowcast
   )
   
   summarised_nowcasts <- map(
@@ -113,12 +111,14 @@ for (i in 1:length(date_list)){
     probs = c(0.025, 0.05, seq(0.1, 0.9, by = 0.1), 0.95, 0.975)
   ) 
   
-  summarised_nowcasts <- rbindlist(summarised_nowcasts, 
-                                   idcol = "model", use.names = TRUE)
+  summarised_nowcasts <- rbindlist(summarised_nowcasts, idcol = "model", use.names = TRUE)
   summarised_nowcasts[, `:=`(nowcast_date = date_nowcast,
                              max_confirm = NULL,
                              cum_prop_reported = NULL,
                              prop_reported = NULL)]
+  
+  # if directory doesn't exist, create it
+  if (!dir.exists(here("data", run_name))) { dir.create(here("data", run_name)) } 
   
   # Store nowcasts
   write.table(summarised_nowcasts,
@@ -130,15 +130,24 @@ for (i in 1:length(date_list)){
   
   # Update latest data
   latest <- obs_all |>
-    enw_filter_report_dates(latest_date =date_latest) |>
+    enw_filter_report_dates(latest_date = date_latest) |>
     enw_latest_data() |>
     enw_filter_reference_dates(latest_date = date_nowcast, include_days = d_max)
   
   # Store scores
-  score <- enw_score_nowcast(
+  natscore <- enw_score_nowcast(
     summarised_nowcasts,
-    latest[reference_date > (max(reference_date) - 7)]
+    latest[reference_date > (max(reference_date) - 7)],
+    log = FALSE
   )
+  
+  logscore <- enw_score_nowcast(
+    summarised_nowcasts,
+    latest[reference_date > (max(reference_date) - 7)],
+    log = TRUE
+  )
+  
+  score <- rbind(natscore[, scale := "natural"], logscore[, scale := "log"]) 
   
   write.table(score,
               file = here("data", run_name, "scores.csv"),

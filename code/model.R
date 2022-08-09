@@ -1,52 +1,49 @@
 # Nowcast models
-nowcast_model <- function(obs, reference, report, max_delay, priors = NULL, ...) {
-  
-  # Set up parallel
-  #ncores <- parallel::detectCores(logical = FALSE)
-  #threads <- 1
-  options(mc.cores = 16)
-  
+nowcast_model <- function(obs, report, max_delay, fit, model) {
   pobs <- enw_preprocess_data(
     obs,
     max_delay = max_delay,
     holidays = "holiday"
   )
   
-  multithread_model <- enw_model(threads = TRUE, verbose = FALSE)
-  report_module_dow <- enw_report(~ (1 | day_of_week), data = pobs)
-  
-  fit <- enw_fit_opts(
-    save_warmup = FALSE, output_loglik = TRUE, pp = TRUE,
-    chains = 4, threads_per_chain = 4, 
-    iter_sampling = 1000, iter_warmup = 1000,
-    show_messages = FALSE, refresh = 0, max_treedepth = 15, adapt_delta = .99,
-    ...
-  )
-  
-  if (reference == "fixed" & report == "fixed") {
+  if (report == "fixed") {
     nowcast <- epinowcast(
       pobs,
       fit = fit,
       model = multithread_model
     )
-  } else if (reference == "fixed" & report == "dow"){
-    if (!is.null(priors)){
-      nowcast <- epinowcast(
-        pobs,
-        fit = fit,
-        report = report_module_dow,
-        model = multithread_model,
-        priors = priors
-      )
-    } else {
-      nowcast <- epinowcast(
-        pobs,
-        fit = fit,
-        report = report_module_dow,
-        model = multithread_model
-      )
-    }
+  } else if (report == "wknd") {
+    report_wknd <- enw_report(~ (1 | weekend), data = pobs)
+    nowcast <- epinowcast(
+      pobs,
+      fit = fit,
+      model = multithread_model,
+      report = report_wknd
+    )
+  } else if (report == "dow"){
+    report_dow <- enw_report(~ (1 | day_of_week), data = pobs)
+    nowcast <- epinowcast(
+      pobs,
+      fit = fit,
+      report = report_dow,
+      model = multithread_model
+    )
+  } else if (report == "wkly") {
+    report_wkly <- enw_report(~ (1 | report_possible), data = pobs)
+    nowcast <- epinowcast(
+      pobs,
+      fit = fit,
+      report = report_wkly,
+      model = multithread_model
+    )
   }
-  
   return(nowcast)
+}
+
+filter_obs <- function(obs, nowcast_date, days_included){
+  # filter data based on estimation (nowcast) date
+  obs_i <- obs |>
+    enw_filter_report_dates(latest_date = date_nowcast) |>
+    enw_filter_reference_dates(include_days = days_included)
+  return(obs_i)
 }
