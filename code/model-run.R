@@ -47,6 +47,12 @@ obs_wk[, holiday := FALSE]
 obs_wk[, report_possible := ifelse(wday(report_date) == 4, TRUE, FALSE)]
 
 # Run models -------------------------------------------------------------
+# Set up multithreading
+ncores <- parallel::detectCores()
+nchains <- 4
+threads <- ncores/nchains
+options(mc.cores = ncores)
+
 time_start <- Sys.time()
 print(paste("Model fitting started at", time_start))
 
@@ -59,12 +65,6 @@ for (i in 1:length(date_list)){
   obs_all_i <- filter_obs(obs_all, date_nowcast, days_included)
   obs_hol_i <- filter_obs(obs_hol, date_nowcast, days_included)
   obs_wk_i <- filter_obs(obs_wk, date_nowcast, days_included)
-  
-  # Set up multithreading
-  ncores <- parallel::detectCores()
-  nchains <- 2
-  threads <- ncores/nchains
-  options(mc.cores = ncores)
   
   # Model fitting options
   fit <- enw_fit_opts(
@@ -111,7 +111,7 @@ for (i in 1:length(date_list)){
     probs = c(0.025, 0.05, seq(0.1, 0.9, by = 0.1), 0.95, 0.975)
   ) 
   
-  summarised_nowcasts <- rbindlist(summarised_nowcasts, idcol = "model", use.names = TRUE)
+  summarised_nowcasts <- rbindlist(summarised_nowcasts, idcol = "model", fill = TRUE, use.names = TRUE)
   summarised_nowcasts[, `:=`(nowcast_date = date_nowcast,
                              max_confirm = NULL,
                              cum_prop_reported = NULL,
