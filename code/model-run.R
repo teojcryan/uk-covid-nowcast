@@ -21,9 +21,9 @@ holidays <- readRDS(here::here("data", "observations", "holidays.rds"))
 d_max <- 10                              # max delay
 days_included <- 21                      # length of training set
 date_latest <- max(obs_all$report_date)  # latest report date available, "ground truth"
-run_name <- "run3"   # Name of run
+run_name <- "run4"   # Name of run
 
-date_start <- as.Date("2022-04-19") #as.Date("2022-02-01") + days_included
+date_start <- as.Date("2022-04-03") #as.Date("2022-02-01") + days_included
 date_end <- as.Date("2022-07-01")
 date_list <- seq(date_start, date_end, by = "days") # list of dates in range
 
@@ -50,7 +50,7 @@ obs_wk[, report_possible := ifelse(wday(report_date) == 4, TRUE, FALSE)]
 # Run models -------------------------------------------------------------
 # Set up multithreading
 ncores <- parallel::detectCores()
-nchains <- 2
+nchains <- 4
 threads <- ncores/nchains
 options(mc.cores = ncores)
 
