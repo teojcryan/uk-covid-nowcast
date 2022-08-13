@@ -14,7 +14,7 @@ n_days <- as.numeric(date_end - date_start)
 # Iterate over date range and download data if available
 for (n in 1:n_days){
   print(paste0(round(100*n/n_days, 3), "%")) # print progress
-  date <- date_end - n #Sys.Date() - n
+  date <- date_end - n # current date
   skip_to_next <- FALSE
   
   tryCatch({
