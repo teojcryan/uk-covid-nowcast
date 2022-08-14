@@ -23,7 +23,7 @@ days_included <- 21                      # length of training set
 date_latest <- max(obs_all$report_date)  # latest report date available, "ground truth"
 run_name <- "run4"   # Name of run
 
-date_start <- as.Date("2022-04-03") #as.Date("2022-02-01") + days_included
+date_start <- as.Date("2022-02-01") + days_included
 date_end <- as.Date("2022-07-01")
 date_list <- seq(date_start, date_end, by = "days") # list of dates in range
 
@@ -78,33 +78,33 @@ for (i in 1:length(date_list)){
   obs_hol_i <- filter_obs(obs_hol, date_nowcast, days_included)
   obs_wk_i <- filter_obs(obs_wk, date_nowcast, days_included)
   
-  # Model 1: Reference fixed, report fixed
-  cat(paste("===== Model 1 =====", "\n"))
-  nowcast <- nowcast_model(obs_all_i, "fixed", d_max, fit, multithread_model)
-  
-  # Model 2: Reference fixed, report weekend
-  cat(paste("===== Model 2 =====", "\n"))
-  wknd_nowcast <- nowcast_model(obs_all_i, "wknd", d_max, fit, multithread_model)
+  # # Model 1: Reference fixed, report fixed
+  # cat(paste("===== Model 1 =====", "\n"))
+  # nowcast <- nowcast_model(obs_all_i, "fixed", d_max, fit, multithread_model)
+  # 
+  # # Model 2: Reference fixed, report weekend
+  # cat(paste("===== Model 2 =====", "\n"))
+  # wknd_nowcast <- nowcast_model(obs_all_i, "wknd", d_max, fit, multithread_model)
 
   # Model 3: Reference fixed, report day of week
-  #cat(paste("===== Model 3 =====", "\n"))
-  #dow_nowcast <- nowcast_model(obs_all_i, "dow", d_max, fit, multithread_model)
+  cat(paste("===== Model 3 =====", "\n"))
+  dow_nowcast <- nowcast_model(obs_all_i, "dow", d_max, fit, multithread_model)
   
-  # Model 4: Reference fixed, report day of week + holidays
-  cat(paste("===== Model 4 =====", "\n"))
-  hol_nowcast <- nowcast_model(obs_hol_i, "dow", d_max, fit, multithread_model)
-  
-  # Model 5: Reference fixed, report on reporting date
-  cat(paste("===== Model 5 =====", "\n"))
-  wkly_nowcast <- nowcast_model(obs_wk_i, "wkly", d_max, fit, multithread_model)
+  # # Model 4: Reference fixed, report day of week + holidays
+  # cat(paste("===== Model 4 =====", "\n"))
+  # hol_nowcast <- nowcast_model(obs_hol_i, "dow", d_max, fit, multithread_model)
+  # 
+  # # Model 5: Reference fixed, report on reporting date
+  # cat(paste("===== Model 5 =====", "\n"))
+  # wkly_nowcast <- nowcast_model(obs_wk_i, "wkly", d_max, fit, multithread_model)
   
   # Summarise nowcasts
   nowcasts <- list(
-    "Fixed" = nowcast,
-    "Weekend" = wknd_nowcast,
-    # "Dayofweek" = dow_nowcast,
-    "Holiday" = hol_nowcast,
-    "Weekly" = wkly_nowcast
+    # "Fixed" = nowcast,
+    # "Weekend" = wknd_nowcast,
+    "Dayofweek" = dow_nowcast,
+    # "Holiday" = hol_nowcast,
+    # "Weekly" = wkly_nowcast
   )
   
   summarised_nowcasts <- map(
