@@ -102,7 +102,7 @@ for (i in 1:length(date_list)){
   nowcasts <- list(
     # "Fixed" = nowcast,
     # "Weekend" = wknd_nowcast,
-    "Dayofweek" = dow_nowcast,
+    "Dayofweek" = dow_nowcast
     # "Holiday" = hol_nowcast,
     # "Weekly" = wkly_nowcast
   )
