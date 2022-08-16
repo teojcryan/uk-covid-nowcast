@@ -1,0 +1,167 @@
+# Packages ----------------------------------------------------------------
+require(epinowcast, quietly = TRUE)
+require(data.table, quietly = TRUE)
+require(purrr, quietly = TRUE, warn.conflicts = FALSE)
+suppressMessages(require(scoringutils, quietly = TRUE))
+suppressMessages(require(here, quietly = TRUE))
+source(here("code", "model.R"))
+
+# Load data ---------------------------------------------------------------
+# Merged dataset
+obs_all <- readRDS(here::here("data", "observations", "all.rds"))[
+  , c('reference_date', 'report_date', 'confirm')]
+
+# Set parameters ----------------------------------------------------------
+d_max <- 10                              # max delay
+days_included <- 21                      # length of training set
+date_latest <- max(obs_all$report_date)  # latest report date available, "ground truth"
+run_name <- "run5a"                       # Name of run
+
+date_start <- as.Date("2022-02-01") + days_included
+date_end <- as.Date("2022-07-01")
+date_list <- seq(date_start, date_end, by = "days") # list of dates in range
+
+# Prepare input data ------------------------------------------------------
+# 1. Week day reporting, incl holidays
+obs_all <- enw_complete_dates(obs_all, max_delay = d_max)
+
+obs_all[, weekend := ifelse(wday(report_date) %in% c(1,7), TRUE, FALSE)] # apply weekends
+obs_all[, holiday_none := FALSE]                                         # apply no-holidays
+obs_all[, dow_custom := ifelse(wday(report_date) == 7, 1, wday(report_date))] # variable for custom 6 day weeks
+
+# Model set-up ------------------------------------------------------------
+# Set up multithreading
+ncores <- parallel::detectCores()
+nchains <- 4
+threads <- ncores/nchains
+options(mc.cores = ncores)
+
+# Model fitting options
+fit <- enw_fit_opts(
+  save_warmup = FALSE, output_loglik = TRUE, pp = TRUE,
+  chains = nchains, threads_per_chain = threads, 
+  iter_sampling = 1000, iter_warmup = 1000,
+  show_messages = FALSE, refresh = 0, max_treedepth = 15, adapt_delta = .99
+)
+
+# Compile nowcasting model
+multithread_model <- enw_model(threads = TRUE, verbose = FALSE)
+
+# Variable list to extract posteriors
+var_list <- c("refp_mean_int", "refp_sd_int", "refp_mean", "refp_sd",
+              "rep_beta", "sqrt_phi", "phi", "eobs_lsd")
+
+# Run models --------------------------------------------------------------
+time_start <- Sys.time()
+print(paste("Model fitting started at", time_start))
+
+for (i in 1:length(date_list)){
+  date_nowcast <- date_list[i]
+  cat(paste("===== Nowcast Date:", date_nowcast, "=====", "\n"))
+  
+  # Filter observations based on nowcast date
+  obs_all_i <- filter_obs(obs_all, date_nowcast, days_included)
+  
+  # Preprocess data
+  pobs <- enw_preprocess_data(obs_all_i, max_delay = d_max, holidays = "holiday_none")   # excl holidays
+  
+  # Define all reporting modules
+  report_dow2 <- enw_report(~ weekend + (1 | dow_custom), data = pobs) # random day of week effect
+  
+  # Model 3.5: Reference fixed, report day of week (custom day of week formulation)
+  cat(paste("===== Model 3.5 =====", "\n"))
+  dow2_nowcast <- epinowcast(pobs, fit = fit, model = multithread_model, report = report_dow2)
+  
+  # Store results as list
+  nowcasts <- list(
+     "Dayofweek2" = dow2_nowcast
+  )
+  
+  # Summarise nowcasts
+  summarised_nowcasts <- map(
+    nowcasts, summary,
+    probs = c(0.025, 0.05, seq(0.1, 0.9, by = 0.1), 0.95, 0.975)
+  ) 
+  
+  summarised_nowcasts <- rbindlist(summarised_nowcasts, idcol = "model", fill = TRUE, use.names = TRUE)
+  summarised_nowcasts[, `:=`(nowcast_date = date_nowcast)]
+  
+  # if directory doesn't exist, create it
+  if (!dir.exists(here("data", run_name))) { dir.create(here("data", run_name)) } 
+  
+  # Store nowcasts
+  write.table(summarised_nowcasts,
+              file = here("data", run_name, "nowcasts.csv"),
+              sep = ",",
+              append = TRUE,
+              row.names = FALSE,
+              col.names = !file.exists(here("data", run_name, "nowcasts.csv")))
+  
+  # Update latest data
+  latest <- obs_all |>
+    enw_filter_report_dates(latest_date = date_latest) |>
+    enw_latest_data() |>
+    enw_filter_reference_dates(latest_date = date_nowcast, include_days = d_max)
+  
+  # Store scores
+  natscore <- enw_score_nowcast(
+    summarised_nowcasts,
+    latest[reference_date > (max(reference_date) - 7)],
+    log = FALSE
+  )
+  
+  logscore <- enw_score_nowcast(
+    summarised_nowcasts,
+    latest[reference_date > (max(reference_date) - 7)],
+    log = TRUE
+  )
+  
+  score <- rbind(natscore[, scale := "natural"], logscore[, scale := "log"]) 
+  
+  write.table(score,
+              file = here("data", run_name, "scores.csv"),
+              sep = ",",
+              append = TRUE,
+              row.names = FALSE,
+              col.names = !file.exists(here("data", run_name, "scores.csv")))
+  
+  # Extract diagnostics
+  diagnostics <- map(nowcasts, 
+                     function(nwc){
+                       out <- copy(nwc)[, nowcast_date := max_date][,`samples`:`nowcast_date`]
+                       return(out)
+                     })
+  diagnostics <- rbindlist(diagnostics, idcol = "model", use.names = TRUE)
+  
+  # Store diagnostics
+  write.table(diagnostics,
+              file = here("data", run_name, "diagnostics.csv"),
+              sep = ",",
+              append = TRUE,
+              row.names = FALSE,
+              col.names = !file.exists(here("data", run_name, "diagnostics.csv")))
+  
+  # Extract posteriors
+  posteriors <- map(nowcasts,
+                    function(nwc){
+                      fit_summary <- data.table(nwc$fit[[1]]$summary())
+                      out <- fit_summary[variable %in% grep(paste(var_list, collapse = "|"), fit_summary$variable, value = TRUE)
+                      ][, `:=`(nowcast_date = date_nowcast,
+                               variable = sub("\\[(.*?)\\]","" ,variable))]
+                      return(out)
+                    })
+  posteriors <- rbindlist(posteriors, idcol = "model", use.names = TRUE)
+  
+  # Store diagnostics
+  write.table(posteriors,
+              file = here("data", run_name, "posteriors.csv"),
+              sep = ",",
+              append = TRUE,
+              row.names = FALSE,
+              col.names = !file.exists(here("data", run_name, "posteriors.csv")))
+  
+  # print progress
+  cat(paste0("Progress: ", round(100*i/length(date_list), 3), "%", "\n",
+             "Time elapsed: ", round(as.numeric(difftime(Sys.time(), time_start, units = "hour")), 3), " hours", "\n")) 
+}
+
