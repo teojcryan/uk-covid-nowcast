@@ -1,4 +1,4 @@
-  # Packages ----------------------------------------------------------------
+# Packages ----------------------------------------------------------------
 require(epinowcast, quietly = TRUE)
 require(data.table, quietly = TRUE)
 require(purrr, quietly = TRUE, warn.conflicts = FALSE)
@@ -21,33 +21,27 @@ holidays <- readRDS(here::here("data", "observations", "holidays.rds"))
 d_max <- 10                              # max delay
 days_included <- 21                      # length of training set
 date_latest <- max(obs_all$report_date)  # latest report date available, "ground truth"
-run_name <- "run4"   # Name of run
+run_name <- "run5"                       # Name of run
 
 date_start <- as.Date("2022-02-01") + days_included
 date_end <- as.Date("2022-07-01")
 date_list <- seq(date_start, date_end, by = "days") # list of dates in range
 
-# Prepare dates -----------------------------------------------------------
+# Prepare input data ------------------------------------------------------
+# 1. Week day reporting, incl holidays
 obs_all <- enw_complete_dates(obs_all, max_delay = d_max)
 
-# 1. Week day reporting, incl holidays
-obs_hol <- merge(obs_all, holidays, by.x = "report_date", by.y = "date")
-obs_hol[, weekend := ifelse(wday(report_date) %in% c(1,7), TRUE, FALSE)]
+obs_all <- merge(obs_all, holidays, by.x = "report_date", by.y = "date") # apply holidays
+obs_all[, weekend := ifelse(wday(report_date) %in% c(1,7), TRUE, FALSE)] # apply weekends
+obs_all[, holiday_none := FALSE]                                         # apply no-holidays
+obs_all[, dow_custom := ifelse(wday(report_date) == 7, 1, wday(report_date))] # variable for custom 6 day weeks
 
-# 2. Week day reporting, excl holidays
-obs_all[, holiday := FALSE]
-  # apply variable to identify weekends
-obs_all[, weekend := ifelse(wday(report_date) %in% c(1,7), TRUE, FALSE)]
-
-# 3. Weekly reporting, excl holidays
+# 2. Weekly reporting, excl holidays
 obs_wk <- enw_complete_dates(obs_wk, max_delay = d_max)
-obs_wk[, holiday := FALSE]
-obs_wk[, weekend := ifelse(wday(report_date) %in% c(1,7), TRUE, FALSE)]
+obs_wk[, report_possible := ifelse(wday(report_date) == 4, TRUE, FALSE)] # reporting only possible on Wednesdays
+obs_wk[, holiday_none := FALSE]    
 
-  # include variable to track reporting dates (Wednesdays)
-obs_wk[, report_possible := ifelse(wday(report_date) == 4, TRUE, FALSE)]
-
-# Run models -------------------------------------------------------------
+# Model set-up ------------------------------------------------------------
 # Set up multithreading
 ncores <- parallel::detectCores()
 nchains <- 4
@@ -65,58 +59,77 @@ fit <- enw_fit_opts(
 # Compile nowcasting model
 multithread_model <- enw_model(threads = TRUE, verbose = FALSE)
 
+# Variable list to extract posteriors
+var_list <- c("refp_mean_int", "refp_sd_int", "refp_mean", "refp_sd",
+              "rep_beta", "sqrt_phi", "phi", "eobs_lsd")
+
+# Run models --------------------------------------------------------------
 time_start <- Sys.time()
 print(paste("Model fitting started at", time_start))
 
-# Iterate over dates in range
 for (i in 1:length(date_list)){
-  date_nowcast <- date_list[i] 
+  date_nowcast <- date_list[i]
   cat(paste("===== Nowcast Date:", date_nowcast, "=====", "\n"))
-  
+
   # Filter observations based on nowcast date
   obs_all_i <- filter_obs(obs_all, date_nowcast, days_included)
-  obs_hol_i <- filter_obs(obs_hol, date_nowcast, days_included)
   obs_wk_i <- filter_obs(obs_wk, date_nowcast, days_included)
   
-  # # Model 1: Reference fixed, report fixed
-  # cat(paste("===== Model 1 =====", "\n"))
-  # nowcast <- nowcast_model(obs_all_i, "fixed", d_max, fit, multithread_model)
-  # 
-  # # Model 2: Reference fixed, report weekend
-  # cat(paste("===== Model 2 =====", "\n"))
-  # wknd_nowcast <- nowcast_model(obs_all_i, "wknd", d_max, fit, multithread_model)
-
+  # Preprocess data
+  pobs <- enw_preprocess_data(obs_all_i, max_delay = d_max, holidays = "holiday_none")   # excl holidays
+  pobs_hol <- enw_preprocess_data(obs_all_i, max_delay = d_max, holidays = "holiday")    # incl holidays
+  pobs_wk <- enw_preprocess_data(obs_wk_i, max_delay = d_max, holidays = "holiday_none") # weekly reporting
+  
+  # Define all reporting modules
+  report_wknd <- enw_report(~ 1 + weekend, data = pobs)                # fixed weekend effect
+  report_dow <- enw_report(~ (1 | day_of_week), data = pobs)           # random day of week effect
+  # report_dow2 <- enw_report(~ weekend + (1 | dow_custom), data = pobs) # random day of week effect
+  report_dow_hol <- enw_report(~ (1 | day_of_week), data = pobs_hol)   # random day of week effect with holidays
+  report_wkly <- enw_report(~ 1 + report_possible, data = pobs_wk)     # fixed weekly report effect
+  
+  # Run nowcasts
+  # Model 1: Reference fixed, report fixed
+  cat(paste("===== Model 1 =====", "\n"))
+  nowcast <- epinowcast(pobs, fit = fit, model = multithread_model)
+  
+  # Model 2: Reference fixed, report weekend
+  cat(paste("===== Model 2 =====", "\n"))
+  wknd_nowcast <- epinowcast(pobs, fit = fit, model = multithread_model, report = report_wknd)
+  
   # Model 3: Reference fixed, report day of week
   cat(paste("===== Model 3 =====", "\n"))
-  dow_nowcast <- nowcast_model(obs_all_i, "dow", d_max, fit, multithread_model)
+  dow_nowcast <- epinowcast(pobs, fit = fit, model = multithread_model, report = report_dow)
   
-  # # Model 4: Reference fixed, report day of week + holidays
-  # cat(paste("===== Model 4 =====", "\n"))
-  # hol_nowcast <- nowcast_model(obs_hol_i, "dow", d_max, fit, multithread_model)
-  # 
-  # # Model 5: Reference fixed, report on reporting date
-  # cat(paste("===== Model 5 =====", "\n"))
-  # wkly_nowcast <- nowcast_model(obs_wk_i, "wkly", d_max, fit, multithread_model)
+  # # Model 3.5: Reference fixed, report day of week (custom day of week formulation)
+  # cat(paste("===== Model 3.5 =====", "\n"))
+  # dow2_nowcast <- epinowcast(pobs, fit = fit, model = multithread_model, report = report_dow2)
   
-  # Summarise nowcasts
+  # Model 4: Reference fixed, report day of week + holidays
+  cat(paste("===== Model 4 =====", "\n"))
+  hol_nowcast <- epinowcast(pobs_hol, fit = fit, model = multithread_model, report = report_dow_hol)
+
+  # Model 5: Reference fixed, report on reporting date
+  cat(paste("===== Model 5 =====", "\n"))
+  wkly_nowcast <- epinowcast(pobs_hol, fit = fit, model = multithread_model, report = report_wkly)
+  
+  # Store results as list
   nowcasts <- list(
-    # "Fixed" = nowcast,
-    # "Weekend" = wknd_nowcast,
-    "Dayofweek" = dow_nowcast
-    # "Holiday" = hol_nowcast,
-    # "Weekly" = wkly_nowcast
+    "Fixed" = nowcast,
+    "Weekend" = wknd_nowcast,
+    "Dayofweek" = dow_nowcast,
+    # "Dayofweek2" = dow2_nowcast,
+    "Holiday" = hol_nowcast,
+    "Weekly" = wkly_nowcast
   )
   
+  # Summarise nowcasts
   summarised_nowcasts <- map(
     nowcasts, summary,
     probs = c(0.025, 0.05, seq(0.1, 0.9, by = 0.1), 0.95, 0.975)
   ) 
   
   summarised_nowcasts <- rbindlist(summarised_nowcasts, idcol = "model", fill = TRUE, use.names = TRUE)
-  summarised_nowcasts[, `:=`(nowcast_date = date_nowcast,
-                             max_confirm = NULL,
-                             cum_prop_reported = NULL,
-                             prop_reported = NULL)]
+  summarised_nowcasts[, `:=`(nowcast_date = date_nowcast)]
   
   # if directory doesn't exist, create it
   if (!dir.exists(here("data", run_name))) { dir.create(here("data", run_name)) } 
@@ -159,9 +172,8 @@ for (i in 1:length(date_list)){
   
   # Extract diagnostics
   diagnostics <- map(nowcasts, 
-                     function(x){
-                       x <- copy(x)
-                       out <- x[, nowcast_date := max_date][,`samples`:`nowcast_date`]
+                     function(nwc){
+                       out <- copy(nwc)[, nowcast_date := max_date][,`samples`:`nowcast_date`]
                        return(out)
                      })
   diagnostics <- rbindlist(diagnostics, idcol = "model", use.names = TRUE)
@@ -174,7 +186,27 @@ for (i in 1:length(date_list)){
               row.names = FALSE,
               col.names = !file.exists(here("data", run_name, "diagnostics.csv")))
   
+  # Extract posteriors
+  posteriors <- map(nowcasts,
+      function(nwc){
+        fit_summary <- data.table(nwc$fit[[1]]$summary())
+        out <- fit_summary[variable %in% grep(paste(var_list, collapse = "|"), fit_summary$variable, value = TRUE)
+                           ][, `:=`(nowcast_date = date_nowcast,
+                                    variable = sub("\\[(.*?)\\]","" ,variable))]
+        return(out)
+      })
+  posteriors <- rbindlist(posteriors, idcol = "model", use.names = TRUE)
+  
+  # Store diagnostics
+  write.table(posteriors,
+              file = here("data", run_name, "posteriors.csv"),
+              sep = ",",
+              append = TRUE,
+              row.names = FALSE,
+              col.names = !file.exists(here("data", run_name, "posteriors.csv")))
+  
   # print progress
   cat(paste0("Progress: ", round(100*i/length(date_list), 3), "%", "\n",
-             "Time elapsed: ", round(as.numeric(difftime(Sys.time(), time_start, units = "min")),3), " mins", "\n")) 
+             "Time elapsed: ", round(as.numeric(difftime(Sys.time(), time_start, units = "hour")), 3), " hours", "\n")) 
 }
+

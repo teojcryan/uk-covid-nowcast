@@ -13,6 +13,7 @@ nowcast_model <- function(obs, report, max_delay, fit, model) {
       model = multithread_model
     )
   } else if (report == "wknd") {
+    #TODO enw_report(~ 1 + weekend, data = pobs)
     report_wknd <- enw_report(~ (1 | weekend), data = pobs)
     nowcast <- epinowcast(
       pobs,
@@ -21,6 +22,7 @@ nowcast_model <- function(obs, report, max_delay, fit, model) {
       report = report_wknd
     )
   } else if (report == "dow"){
+    #TODO 7 days to 6 days?
     report_dow <- enw_report(~ (1 | day_of_week), data = pobs)
     nowcast <- epinowcast(
       pobs,
@@ -29,6 +31,7 @@ nowcast_model <- function(obs, report, max_delay, fit, model) {
       model = multithread_model
     )
   } else if (report == "wkly") {
+    #TODO enw_report(~ 1 + report_possible, data = pobs)
     report_wkly <- enw_report(~ (1 | report_possible), data = pobs)
     nowcast <- epinowcast(
       pobs,
