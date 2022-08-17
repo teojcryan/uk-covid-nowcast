@@ -1,16 +1,18 @@
 ---
 title: "Nowcasting in the UK during the COVID-19 pandemic"
-author: "Ryan Teo"
 format: 
   revealjs:
-    toc: true
-    toc-depth: 1
-    toc-title: "Contents"
-    incremental: true
+    theme: [default, custom.scss]
+    #toc: true
+    #toc-depth: 1
+    #toc-title: "Contents"
+    # incremental: true
     transition: slide
     transition-speed: fast
     slide-number: c
     chalkboard: true
+execute:
+  freeze: auto
 ---
 
 ```{r, include = FALSE}
@@ -27,47 +29,171 @@ dt <- readRDS(here("data", "observations", "all.rds"))
 # Introduction
 
 ## Nowcasting
-- What is nowcasting?
-- Why is it important?
+-   Real-time data is important in outbreak response
+-   Epidemiological indicators often suffer from reporting delays
+    + Right truncation
 
 ## Nowcasting for COVID-19
-- Past studies
-- Gap
+-   Past studies
+-   Gap
 
 ## Objectives
-1. Explore the utility of nowcasts of COVID-19 incidence conducted on publicly available data in England
-2. Assess the impact of reporting structures on the accuracy of forecasts
-    + Weekends
-    + Bank holidays
-    + Reporting schedules
+-   Assess the impact of reporting structures on the relative performance of nowcasts
+    -   Weekends
+    -   Bank holidays
+    -   Reporting schedules
 
-# Methodology
+# Methods
 
-## Dataset
-- New COVID-19 cases by specimen date^[date during which test was taken]
-    + Historical data available
-    + Available from 23 Feb 2021 onwards
-    + Reported every week day up till 1 Jul 2022 and weekly thereafter
+## Data
 
-## Dataset
+-   New COVID-19 cases by specimen date[^1]
+    -   Historical data available
+    -   Available from 23 Feb 2021 onwards
+    -   Reported every week day up till 1 Jul 2022 and weekly thereafter
+
+[^1]: date during which test was taken
+
+## Data
 
 ```{r, echo = FALSE}
 p_case_delay <- plot_case_delay(dt, 7)
 ```
 
 ## Nowcasting
-- Expected final counts
-- Delay distributions
-- Observation model
 
-## Models
-1. [Fixed]{style="color: red;"} reporting delay distribution across time
-2. Varying reporting delay distribution by [weekends]{style="color: red;"}
-3. Varying reporting delay distribution by [day of week]{style="color: red;"} and [bank holidays]{style="color: red;"}
-4. Model 3 on [weekly reported]{style="color: red;"} data
+-   Objective: predict $N_t$, number of cases with specimen date $t$$$N_t = \sum_{d=0}^D n_{t,d}$$
+-   $n_{t,d}$ number of cases with specimen date $t$ reported with delay of $d$
+-   $p_{t,d}$ probability of a reporting delay of $d$ days for a case with specimen date $t$
+
+## Nowcasting
+
+The general approach is to jointly estimate
+
+1.  $\lambda_t=\mathbb{E}[N_t]$ expected number of final notifications
+2.  $p_{t,d}$ delay distribution
+
+$$
+\begin{aligned}
+n_{t,d}&\sim\text{NegBin}(\lambda_tp_{t,d},\phi) \\ 
+\frac{1}{\sqrt{\phi}}&\sim\text{Half-Normal}(0,1)
+\end{aligned}
+$$
+
+## Expected final notifications $\lambda_t$
+
+First order autoregressive random walk over time
+
+$$
+\begin{aligned}
+\log(\lambda_0) &\sim N\left(\log(N_0+1),1\right), \\
+\log(\lambda_t) &\sim N(\log(\lambda_{t-1}), \sigma^2), \\
+\sigma^2 &\sim \text{Half-Normal}(0,1)
+\end{aligned}
+$$
+
+## Delay distribution $p_{t,d}$
+
+Discrete-time logistic hazard model
+
+$$h_{t,d}=\mathbb{P}(\text{delay}=d|\text{delay} \geq d, W_{t,d}),\ h_{t,D} = 1$$
+
+$$
+\begin{aligned}
+p_{t,0} &= h_{t,0} \\
+p_{t,d} &= \left(1 - \sum_{i=0}^{d-1}p_{t,i}\right)h_{t,d}
+\end{aligned}
+$$
+
+## Hazard components
+
+$W_{t,d}$ can be decomposed into
+
+1.  $\gamma_{t,d}$ parametric hazard at specimen date
+2.  $\epsilon_{t,d}$ non-parametric hazard at report times
+
+$$\text{logit}(h_{t,d}) = \gamma_{t,d}+\epsilon_{t,d}$$
+
+## Hazard by specimen date $\gamma_{t,d}$
+
+Probability of reporting a case $p'_{t,d}$ at a given time if it followed a parametric distribution (discretised log normal)
+
+$$
+\begin{aligned}   
+p'_{t,d}\sim\text{LogNormal}(\gamma_t, v_t) \\ 
+\gamma_t = \mu_0,\quad v_t=\exp(v_0)
+\end{aligned}
+$$
+
+Distribution is normalised to sum to 1.
+
+```{r, echo=FALSE, fig.align = "right", fig.retina = 2, fig.height = 3, fig.width = 4}
+data.table(x = 0:10)[
+  , y := dlnorm(x, meanlog = 1, sdlog = .5)] |>
+  ggplot(aes(x=x, y=y)) + 
+  geom_point(col = "red") + 
+  scale_x_discrete("x", limits = 0:10) +
+  theme_bw()
+```
+
+## Hazard by specimen date $\gamma_{t,d}$
+
+Probability of report at a given delay $d$ given that it has not already been reported for this component of the model
+
+$$\gamma_{t,d}=\text{logit}\left(\frac{p'_{t,d}}{(1-\sum_{i=0}^{d-1}p'_{t,i})}\right)$$
+
+## Hazard at report date $\epsilon_{t,d}$
+
+Non-parametric effects referenced by report dates represented by non-distributional logit hazard components
+
+$$\epsilon_{t,d} = \epsilon_0 + \alpha_\epsilon X_\epsilon + \beta_\epsilon Z_\epsilon$$
+
+-   $\epsilon_0$ intercept
+-   $\alpha_\epsilon$ fixed coefficients
+-   $\beta_\epsilon$ random coefficients
+
+## Model formulations
+
+1. Simplest case  
+
+$$\epsilon_{t,d} = 0$$
+
+## Model formulations
+
+2. Fixed weekend effect 
+
+$$\epsilon_{t,d} = \alpha_{\text{wknd}}X_{\text{wknd}}$$ where $X_{\text{wknd}} = \mathbb{I}\{\text{Weekday}\}$
+
+## Model formulations
+
+3. Random day of week effect
+
+$$\epsilon_{t,d} = \beta_{\text{dow}}Z_{\text{dow}}$$ where $\beta_{\text{dow}}\sim N(0,\sigma_{\text{dow}}^2)$ and $Z_{\text{dow}} \in \{1,...,7\}$
+
+## Model formulations
+
+4. Random day of week and holiday effect
+
+$$\epsilon_{t,d} = \beta_{\text{dowh}}Z_{\text{dowh}}$$ where $\beta_{\text{dowh}}\sim N(0,\sigma_{\text{dowh}}^2)$ and $Z_{\text{dowh}} \in \{1,...,7\}$ but bank holidays are treated as Sundays
+
+## Model formulations
+5. Fixed weekly reporting effect
+
+$$\epsilon_{t,d} = \alpha_{\text{report}}X_{\text{report}}$$ where $X_{\text{report}} = \mathbb{I}\{\text{Wednesday}\}$
+
+## Model formulations
+
+|     | Equation                                                                | Description                         |
+|--------|--------------------------------|--------------------------------|
+| 1   | $\epsilon_{t,d} = 0$                                           | Fixed reporting effect              |
+| 2   | $\epsilon_{t,d} = \alpha_{\text{wknd}}X_{\text{wknd}}$     | Fixed weekend effect                |
+| 3   | $\epsilon_{t,d} = \beta_{\text{dow}}Z_{\text{dow}}$        | Random day of week effect           |
+| 4   |  $\epsilon_{t,d} = \beta_{\text{dowh}}Z_{\text{dowh}}$ | Random day of week + holiday effect |
+| 5   | $\epsilon_{t,d} = \alpha_{\text{report}}X_{\text{report}}$ | Fixed weekly reporting              |
 
 ## Model evaluation
-- Weighted Interval Score
+
+-   Weighted Interval Score
 
 # Results
 
