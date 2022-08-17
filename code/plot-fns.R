@@ -30,7 +30,8 @@ plot_case_delay <- function(dt, delay_max, prop = TRUE){
     aes(x=reference_date, y=new_confirm, fill=delay_grp) +
     geom_bar(position = position_stack(reverse = TRUE), stat = 'identity', width=1) + 
     scale_y_continuous("Cases", labels = scales::unit_format(unit = "k", scale = 1e-3, sep="")) + 
-    scale_x_date("Specimen date", expand = c(0,0)) +
+    scale_x_date("Specimen date", expand = c(0,0), date_breaks = "3 months", 
+                 date_minor_breaks = "1 month", date_labels = "%b %y") +
     scale_fill_discrete("Delay (days)") +
     guides(fill = guide_legend(nrow = 1)) +
     theme_bw() +
@@ -46,7 +47,8 @@ plot_case_delay <- function(dt, delay_max, prop = TRUE){
       scale_y_continuous(name = "Proportion of cases",
                          sec.axis = sec_axis(trans = ~.*max(delay_mean$mean),
                                              name = 'Mean delay (days)')) + 
-      scale_x_date("Specimen date", expand = c(0,0)) +
+      scale_x_date("Specimen date", expand = c(0,0), date_breaks = "3 months", 
+                   date_minor_breaks = "1 month", date_labels = "%b %y") +
       scale_fill_discrete("Delay (days)") +
       guides(fill = guide_legend(nrow = 1)) +
       theme_bw() +
