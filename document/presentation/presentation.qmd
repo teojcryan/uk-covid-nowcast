@@ -1,0 +1,84 @@
+---
+title: "Nowcasting in the UK during the COVID-19 pandemic"
+author: "Ryan Teo"
+format: 
+  revealjs:
+    toc: true
+    toc-depth: 1
+    toc-title: "Contents"
+    incremental: true
+    transition: slide
+    transition-speed: fast
+    slide-number: c
+    chalkboard: true
+---
+
+```{r, include = FALSE}
+require(tidyverse)
+require(here)
+require(data.table)
+require(ggpubr)
+source(here("code", "plot-fns.R"))
+
+# load data
+dt <- readRDS(here("data", "observations", "all.rds"))
+```
+
+# Introduction
+
+## Nowcasting
+- What is nowcasting?
+- Why is it important?
+
+## Nowcasting for COVID-19
+- Past studies
+- Gap
+
+## Objectives
+1. Explore the utility of nowcasts of COVID-19 incidence conducted on publicly available data in England
+2. Assess the impact of reporting structures on the accuracy of forecasts
+    + Weekends
+    + Bank holidays
+    + Reporting schedules
+
+# Methodology
+
+## Dataset
+- New COVID-19 cases by specimen date^[date during which test was taken]
+    + Historical data available
+    + Available from 23 Feb 2021 onwards
+    + Reported every week day up till 1 Jul 2022 and weekly thereafter
+
+## Dataset
+
+```{r, echo = FALSE}
+p_case_delay <- plot_case_delay(dt, 7)
+```
+
+## Nowcasting
+- Expected final counts
+- Delay distributions
+- Observation model
+
+## Models
+1. [Fixed]{style="color: red;"} reporting delay distribution across time
+2. Varying reporting delay distribution by [weekends]{style="color: red;"}
+3. Varying reporting delay distribution by [day of week]{style="color: red;"} and [bank holidays]{style="color: red;"}
+4. Model 3 on [weekly reported]{style="color: red;"} data
+
+## Model evaluation
+- Weighted Interval Score
+
+# Results
+
+## Empirical Reporting Delays
+
+## Nowcasting Models
+
+## Scores
+
+## Diagnostics
+
+# Discussion
+
+# Conclusions
