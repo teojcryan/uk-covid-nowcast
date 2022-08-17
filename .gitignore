@@ -41,3 +41,6 @@ vignettes/*.pdf
 # raw data files
 data/observations/reported
 code/archive
+
+/.quarto/
+/_site/
