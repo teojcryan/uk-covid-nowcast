@@ -65,7 +65,7 @@ summarise_week <- function(nowcast, probs = c(0.025, 0.05, 0.1, 0.2, 0.25, 0.5, 
           .SDcols = cols, by = c(".draw")
   ]
   samples <- samples[!is.na(sample)]
-  
+
   # Summarise 7 day nowcast
   seven_day <- enw_summarise_samples(samples, probs = probs)
   

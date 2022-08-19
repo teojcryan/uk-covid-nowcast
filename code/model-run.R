@@ -21,7 +21,7 @@ holidays <- readRDS(here::here("data", "observations", "holidays.rds"))
 d_max <- 10                              # max delay
 days_included <- 21                      # length of training set
 date_latest <- max(obs_all$report_date)  # latest report date available, "ground truth"
-run_name <- "run6"                       # Name of run
+run_name <- "run7"                       # Name of run
 
 date_start <- as.Date("2022-02-01") + days_included
 date_end <- as.Date("2022-07-01")
@@ -44,7 +44,7 @@ obs_wk[, holiday_none := FALSE]
 # Model set-up ------------------------------------------------------------
 # Set up multithreading
 ncores <- parallel::detectCores()
-nchains <- 4
+nchains <- 2
 threads <- ncores/nchains
 options(mc.cores = ncores)
 
@@ -60,10 +60,7 @@ fit <- enw_fit_opts(
 multithread_model <- enw_model(model = "code/dow_exp.stan", threads = TRUE, verbose = FALSE)
 
 # Variable list to extract posteriors
-var_list <- c("refp_mean_int", "refp_sd_int", "refp_mean", "refp_sd",
-              "rep_beta", "sqrt_phi", "phi", "eobs_lsd", "obs_dow")
-
-var_list2 <- c("refp", "rep", "phi", "eobs", "obs_dow")
+var_list <- c("refp", "rep", "phi", "leobs_init", "eobs_lsd", "obs_dow")
 
 # Run models --------------------------------------------------------------
 time_start <- Sys.time()
@@ -75,20 +72,20 @@ for (i in 1:length(date_list)){
 
   # Filter observations based on nowcast date
   obs_all_i <- filter_obs(obs_all, date_nowcast, days_included)
-  obs_wk_i <- filter_obs(obs_wk, date_nowcast, days_included)
+  # obs_wk_i <- filter_obs(obs_wk, date_nowcast, days_included)
   
   # Preprocess data
   pobs <- enw_preprocess_data(obs_all_i, max_delay = d_max, holidays = "holiday_none")   # excl holidays
-  pobs_hol <- enw_preprocess_data(obs_all_i, max_delay = d_max, holidays = "holiday")    # incl holidays
-  pobs_wk <- enw_preprocess_data(obs_wk_i, max_delay = d_max, holidays = "holiday_none") # weekly reporting
+  # pobs_hol <- enw_preprocess_data(obs_all_i, max_delay = d_max, holidays = "holiday")    # incl holidays
+  # pobs_wk <- enw_preprocess_data(obs_wk_i, max_delay = d_max, holidays = "holiday_none") # weekly reporting
   
   # Define all reporting modules
-  report_wknd <- enw_report(~ 1 + weekend, data = pobs)                # fixed weekend effect
+  # report_wknd <- enw_report(~ 1 + weekend, data = pobs)                # fixed weekend effect
   #TODO dow_custom instead
   report_dow <- enw_report(~ (1 | day_of_week), data = pobs)           # random day of week effect
   # report_dow2 <- enw_report(~ weekend + (1 | dow_custom), data = pobs) # random day of week effect
-  report_dow_hol <- enw_report(~ (1 | day_of_week), data = pobs_hol)   # random day of week effect with holidays
-  report_wkly <- enw_report(~ 1 + report_possible, data = pobs_wk)     # fixed weekly report effect
+  # report_dow_hol <- enw_report(~ (1 | day_of_week), data = pobs_hol)   # random day of week effect with holidays
+  # report_wkly <- enw_report(~ 1 + report_possible, data = pobs_wk)     # fixed weekly report effect
   
   # Define 
   # exp <- enw_expectation(data = pobs)
@@ -119,16 +116,16 @@ for (i in 1:length(date_list)){
   
   # Run nowcasts
   # Model 1: Reference fixed, report fixed
-  cat(paste("===== Model 1 =====", "\n"))
-  nowcast <- epinowcast(pobs, fit = fit, model = multithread_model)#, expectation = exp)
-  
+  # cat(paste("===== Model 1 =====", "\n"))
+  # nowcast <- epinowcast(pobs, fit = fit, model = multithread_model)#, expectation = exp)
+  # 
   # # Model 2: Reference fixed, report weekend
   # cat(paste("===== Model 2 =====", "\n"))
   # wknd_nowcast <- epinowcast(pobs, fit = fit, model = multithread_model, report = report_wknd)
   # 
   # # Model 3: Reference fixed, report day of week
-  # cat(paste("===== Model 3 =====", "\n"))
-  # dow_nowcast <- epinowcast(pobs, fit = fit, model = multithread_model, report = report_dow)
+  cat(paste("===== Model 3 =====", "\n"))
+  dow_nowcast <- epinowcast(pobs, fit = fit, model = multithread_model, report = report_dow)
   # 
   # # # Model 3.5: Reference fixed, report day of week (custom day of week formulation)
   # # cat(paste("===== Model 3.5 =====", "\n"))
@@ -144,9 +141,9 @@ for (i in 1:length(date_list)){
   
   # Store results as list
   nowcasts <- list(
-    "Fixed" = nowcast
+    #"Fixed" = nowcast
     # "Weekend" = wknd_nowcast,
-    # "Dayofweek" = dow_nowcast,
+    "Dayofweek" = dow_nowcast
     # "Dayofweek2" = dow2_nowcast,
     # "Holiday" = hol_nowcast,
     # "Weekly" = wkly_nowcast
@@ -189,32 +186,33 @@ for (i in 1:length(date_list)){
               col.names = !file.exists(here("data", run_name, "nowcasts_wk.csv")))
   
   # Update latest data
-  latest <- obs_all |>
-    enw_filter_report_dates(latest_date = date_latest) |>
-    enw_latest_data() |>
-    enw_filter_reference_dates(latest_date = date_nowcast, include_days = d_max)
+  # latest <- obs_all |>
+  #   enw_filter_report_dates(latest_date = date_latest) |>
+  #   enw_latest_data() |>
+  #   enw_filter_reference_dates(latest_date = date_nowcast, include_days = d_max)
   
   # Store scores
-  natscore <- enw_score_nowcast(
-    summarised_nowcasts,
-    latest[reference_date > (max(reference_date) - 7)],
-    log = FALSE
-  )
-  
-  logscore <- enw_score_nowcast(
-    summarised_nowcasts,
-    latest[reference_date > (max(reference_date) - 7)],
-    log = TRUE
-  )
-  
-  score <- rbind(natscore[, scale := "natural"], logscore[, scale := "log"]) 
-  
-  write.table(score,
-              file = here("data", run_name, "scores.csv"),
-              sep = ",",
-              append = TRUE,
-              row.names = FALSE,
-              col.names = !file.exists(here("data", run_name, "scores.csv")))
+  # natscore <- enw_score_nowcast(
+  #   summarised_nowcasts,
+  #   latest,
+  #   log = FALSE
+  #   #TODO by ref, rep, model
+  # )
+  # 
+  # logscore <- enw_score_nowcast(
+  #   summarised_nowcasts,
+  #   latest[reference_date > (max(reference_date) - 7)],
+  #   log = TRUE
+  # )
+  # 
+  # score <- rbind(natscore[, scale := "natural"], logscore[, scale := "log"]) 
+  # 
+  # write.table(score,
+  #             file = here("data", run_name, "scores.csv"),
+  #             sep = ",",
+  #             append = TRUE,
+  #             row.names = FALSE,
+  #             col.names = !file.exists(here("data", run_name, "scores.csv")))
   
   # Extract diagnostics
   diagnostics <- map(nowcasts, 
