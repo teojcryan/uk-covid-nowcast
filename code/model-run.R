@@ -86,17 +86,17 @@ for (i in 1:length(date_list)){
   report_wkly <- enw_report(~ 1 + report_possible, data = pobs_wk)       # fixed weekly report effect
   
   # Run nowcasts
-  # Model 1: Reference fixed, report fixed
-  cat(paste("===== Model 1 =====", "\n"))
-  nowcast <- epinowcast(pobs, fit = fit, model = multithread_model)
+  # # Model 1: Reference fixed, report fixed
+  # cat(paste("===== Model 1 =====", "\n"))
+  # nowcast <- epinowcast(pobs, fit = fit, model = multithread_model)
+  # 
+  # # Model 2: Reference fixed, report weekend
+  # cat(paste("===== Model 2 =====", "\n"))
+  # wknd_nowcast <- epinowcast(pobs, fit = fit, model = multithread_model, report = report_wknd)
 
-  # Model 2: Reference fixed, report weekend
-  cat(paste("===== Model 2 =====", "\n"))
-  wknd_nowcast <- epinowcast(pobs, fit = fit, model = multithread_model, report = report_wknd)
-
-  # # Model 3: Reference fixed, report day of week
-  # cat(paste("===== Model 3 =====", "\n"))
-  # dow_nowcast <- epinowcast(pobs, fit = fit, model = multithread_model, report = report_dow)
+  # Model 3: Reference fixed, report day of week
+  cat(paste("===== Model 3 =====", "\n"))
+  dow_nowcast <- epinowcast(pobs, fit = fit, model = multithread_model, report = report_dow)
   # 
   # # Model 4: Reference fixed, report day of week + holidays
   # cat(paste("===== Model 4 =====", "\n"))
@@ -108,11 +108,11 @@ for (i in 1:length(date_list)){
   
   # Store results as list
   nowcasts <- list(
-    "Fixed" = nowcast,
-    "Weekend" = wknd_nowcast,
-    # "Dayofweek" = dow_nowcast,
+    # "Fixed" = nowcast,
+    # "Weekend" = wknd_nowcast,
+    "Dayofweek" = dow_nowcast
     # "Holiday" = hol_nowcast,
-    "Weekly" = wkly_nowcast
+    # "Weekly" = wkly_nowcast
   )
   
   # if directory doesn't exist, create it
@@ -174,7 +174,6 @@ for (i in 1:length(date_list)){
         fit_summary <- data.table(nwc$fit[[1]]$summary())
         out <- fit_summary[variable %in% grep(paste(var_list, collapse = "|"), fit_summary$variable, value = TRUE)
                            ][, `:=`(nowcast_date = date_nowcast)]
-                                    #variable = sub("\\[(.*?)\\]","" ,variable))]
         return(out)
       })
   posteriors <- rbindlist(posteriors, idcol = "model", use.names = TRUE)
