@@ -57,7 +57,8 @@ fit <- enw_fit_opts(
 )
 
 # Compile nowcasting model
-multithread_model <- enw_model(threads = TRUE, verbose = FALSE)
+# multithread_model <- enw_model(threads = TRUE, verbose = FALSE)
+multithread_model <- enw_model(model = "code/dow_exp.stan", threads = TRUE, verbose = FALSE)
 
 # Variable list to extract posteriors
 var_list <- c("refp", "rep", "phi", "leobs_init", "eobs_lsd", "obs_dow")
@@ -95,12 +96,12 @@ for (i in 1:length(date_list)){
   # wknd_nowcast <- epinowcast(pobs, fit = fit, model = multithread_model, report = report_wknd)
 
   # # Model 3: Reference fixed, report day of week
-  # cat(paste("===== Model 3 =====", "\n"))
-  # dow_nowcast <- epinowcast(pobs, fit = fit, model = multithread_model, report = report_dow)
+  cat(paste("===== Model 3 =====", "\n"))
+  dow_nowcast <- epinowcast(pobs, fit = fit, model = multithread_model, report = report_dow)
   
-  # Model 4: Reference fixed, report day of week + holidays
-  cat(paste("===== Model 4 =====", "\n"))
-  hol_nowcast <- epinowcast(pobs_hol, fit = fit, model = multithread_model, report = report_dow_hol)
+  # # Model 4: Reference fixed, report day of week + holidays
+  # cat(paste("===== Model 4 =====", "\n"))
+  # hol_nowcast <- epinowcast(pobs_hol, fit = fit, model = multithread_model, report = report_dow_hol)
 
   # # Model 5: Reference fixed, report on reporting date
   # cat(paste("===== Model 5 =====", "\n"))
@@ -110,8 +111,8 @@ for (i in 1:length(date_list)){
   nowcasts <- list(
     # "Fixed" = nowcast,
     # "Weekend" = wknd_nowcast,
-    # "Dayofweek" = dow_nowcast,
-    "Holiday" = hol_nowcast
+    "Dayofweekexp" = dow_nowcast
+    # "Holiday" = hol_nowcast,
     # "Weekly" = wkly_nowcast
   )
   
