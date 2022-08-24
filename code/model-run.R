@@ -95,11 +95,11 @@ for (i in 1:length(date_list)){
   # cat(paste("===== Model 2 =====", "\n"))
   # wknd_nowcast <- epinowcast(pobs, fit = fit, model = multithread_model, report = report_wknd)
 
-  # # Model 3: Reference fixed, report day of week
-  # cat(paste("===== Model 3 =====", "\n"))
-  # dow_nowcast <- epinowcast(pobs, fit = fit, model = multithread_model, report = report_dow)
+  # Model 3: Reference fixed, report day of week
+  cat(paste("===== Model 3 =====", "\n"))
+  dow_nowcast <- epinowcast(pobs, fit = fit, model = multithread_model, report = report_dow)
   
-  # # Model 4: Reference fixed, report day of week + holidays
+  # Model 4: Reference fixed, report day of week + holidays
   # cat(paste("===== Model 4 =====", "\n"))
   # hol_nowcast <- epinowcast(pobs_hol, fit = fit, model = multithread_model, report = report_dow_hol)
 
