@@ -57,8 +57,8 @@ fit <- enw_fit_opts(
 )
 
 # Compile nowcasting model
-multithread_model <- enw_model(threads = TRUE, verbose = FALSE)
-# multithread_model <- enw_model(model = "code/dow_exp.stan", threads = TRUE, verbose = FALSE)
+# multithread_model <- enw_model(threads = TRUE, verbose = FALSE)
+multithread_model <- enw_model(model = "code/dow_exp.stan", threads = TRUE, verbose = FALSE)
 
 # Variable list to extract posteriors
 var_list <- c("refp", "rep", "phi", "leobs_init", "eobs_lsd", "obs_dow", "srdlh")
@@ -112,7 +112,7 @@ for (i in 1:length(date_list)){
     # "Fixed" = nowcast,
     # "Weekend" = wknd_nowcast,
     # "Dayofweek" = dow_nowcast,
-    "Holiday" = hol_nowcast
+    "Holidaydow" = hol_nowcast
     # "Weekly" = wkly_nowcast
   )
   
