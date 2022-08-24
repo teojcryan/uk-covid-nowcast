@@ -87,13 +87,13 @@ for (i in 1:length(date_list)){
   report_wkly <- enw_report(~ 1 + report_possible, data = pobs_wk)       # fixed weekly report effect
   
   # Run nowcasts
-  # # Model 1: Reference fixed, report fixed
-  cat(paste("===== Model 1 =====", "\n"))
-  nowcast <- epinowcast(pobs, fit = fit, model = multithread_model)
+  # Model 1: Reference fixed, report fixed
+  # cat(paste("===== Model 1 =====", "\n"))
+  # nowcast <- epinowcast(pobs, fit = fit, model = multithread_model)
 
-  # # Model 2: Reference fixed, report weekend
-  cat(paste("===== Model 2 =====", "\n"))
-  wknd_nowcast <- epinowcast(pobs, fit = fit, model = multithread_model, report = report_wknd)
+  # Model 2: Reference fixed, report weekend
+  # cat(paste("===== Model 2 =====", "\n"))
+  # wknd_nowcast <- epinowcast(pobs, fit = fit, model = multithread_model, report = report_wknd)
 
   # # Model 3: Reference fixed, report day of week
   # cat(paste("===== Model 3 =====", "\n"))
@@ -104,16 +104,16 @@ for (i in 1:length(date_list)){
   # hol_nowcast <- epinowcast(pobs_hol, fit = fit, model = multithread_model, report = report_dow_hol)
 
   # # Model 5: Reference fixed, report on reporting date
-  cat(paste("===== Model 5 =====", "\n"))
-  wkly_nowcast <- epinowcast(pobs_wk, fit = fit, model = multithread_model, report = report_wkly)
+  # cat(paste("===== Model 5 =====", "\n"))
+  # wkly_nowcast <- epinowcast(pobs_wk, fit = fit, model = multithread_model, report = report_wkly)
 
   # Store results as list
   nowcasts <- list(
-    "Fixed" = nowcast,
-    "Weekend" = wknd_nowcast,
-    # "Dayofweekexp" = dow_nowcast,
+    # "Fixed" = nowcast,
+    # "Weekend" = wknd_nowcast,
+    "Dayofweek" = dow_nowcast
     # "Holiday" = hol_nowcast,
-    "Weekly" = wkly_nowcast
+    # "Weekly" = wkly_nowcast
   )
   
   # if directory doesn't exist, create it
