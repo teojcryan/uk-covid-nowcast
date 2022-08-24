@@ -112,7 +112,7 @@ for (i in 1:length(date_list)){
     # "Fixed" = nowcast,
     # "Weekend" = wknd_nowcast,
     # "Dayofweek" = dow_nowcast,
-    "Holiday" = hol_nowcast
+    "Holidaydow" = hol_nowcast
     # "Weekly" = wkly_nowcast
   )
   
