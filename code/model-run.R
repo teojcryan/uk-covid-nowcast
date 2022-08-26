@@ -21,7 +21,7 @@ holidays <- readRDS(here::here("data", "observations", "holidays.rds"))
 d_max <- 10                              # max delay
 days_included <- 21                      # length of training set
 date_latest <- max(obs_all$report_date)  # latest report date available, "ground truth"
-run_name <- "run9i"                       # Name of run
+run_name <- "run9ii"                       # Name of run
 
 date_start <- as.Date("2022-02-01") + days_included
 date_end <- as.Date("2022-07-01")
@@ -111,7 +111,7 @@ for (i in 1:length(date_list)){
   nowcasts <- list(
     # "Fixed" = nowcast,
     # "Weekend" = wknd_nowcast,
-    "Dayofweek" = dow_nowcast,
+    "Dayofweek" = dow_nowcast
     # "Holiday" = hol_nowcast,
     # "Weekly" = wkly_nowcast
   )
