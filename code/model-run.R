@@ -21,7 +21,7 @@ holidays <- readRDS(here::here("data", "observations", "holidays.rds"))
 d_max <- 10                              # max delay
 days_included <- 21                      # length of training set
 date_latest <- max(obs_all$report_date)  # latest report date available, "ground truth"
-run_name <- "run9"                       # Name of run
+run_name <- "run9i"                       # Name of run
 
 date_start <- as.Date("2022-02-01") + days_included
 date_end <- as.Date("2022-07-01")
@@ -88,32 +88,32 @@ for (i in 1:length(date_list)){
   
   # Run nowcasts
   # Model 1: Reference fixed, report fixed
-  cat(paste("===== Model 1 =====", "\n"))
-  nowcast <- epinowcast(pobs, fit = fit, model = multithread_model)
+  # cat(paste("===== Model 1 =====", "\n"))
+  # nowcast <- epinowcast(pobs, fit = fit, model = multithread_model)
 
   # Model 2: Reference fixed, report weekend
-  cat(paste("===== Model 2 =====", "\n"))
-  wknd_nowcast <- epinowcast(pobs, fit = fit, model = multithread_model, report = report_wknd)
+  # cat(paste("===== Model 2 =====", "\n"))
+  # wknd_nowcast <- epinowcast(pobs, fit = fit, model = multithread_model, report = report_wknd)
 
   # Model 3: Reference fixed, report day of week
-  # cat(paste("===== Model 3 =====", "\n"))
-  # dow_nowcast <- epinowcast(pobs, fit = fit, model = multithread_model, report = report_dow)
+  cat(paste("===== Model 3 =====", "\n"))
+  dow_nowcast <- epinowcast(pobs, fit = fit, model = multithread_model, report = report_dow)
   
   # Model 4: Reference fixed, report day of week + holidays
   # cat(paste("===== Model 4 =====", "\n"))
   # hol_nowcast <- epinowcast(pobs_hol, fit = fit, model = multithread_model, report = report_dow_hol)
 
   # Model 5: Reference fixed, report on reporting date
-  cat(paste("===== Model 5 =====", "\n"))
-  wkly_nowcast <- epinowcast(pobs_wk, fit = fit, model = multithread_model, report = report_wkly)
+  # cat(paste("===== Model 5 =====", "\n"))
+  # wkly_nowcast <- epinowcast(pobs_wk, fit = fit, model = multithread_model, report = report_wkly)
 
   # Store results as list
   nowcasts <- list(
-    "Fixed" = nowcast,
-    "Weekend" = wknd_nowcast,
-    # "Dayofweek" = dow_nowcast,
+    # "Fixed" = nowcast,
+    # "Weekend" = wknd_nowcast,
+    "Dayofweek" = dow_nowcast,
     # "Holiday" = hol_nowcast,
-    "Weekly" = wkly_nowcast
+    # "Weekly" = wkly_nowcast
   )
   
   # if directory doesn't exist, create it
