@@ -4,7 +4,7 @@
 filter_obs <- function(obs, nowcast_date, days_included){
   # filter data based on estimation (nowcast) date
   obs_i <- obs |>
-    enw_filter_report_dates(latest_date = date_nowcast) |>
+    enw_filter_report_dates(latest_date = nowcast_date) |>
     enw_filter_reference_dates(include_days = days_included)
   return(obs_i)
 }
