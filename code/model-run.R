@@ -21,7 +21,7 @@ holidays <- readRDS(here::here("data", "observations", "holidays.rds"))
 d_max <- 10                              # max delay
 days_included <- 21                      # length of training set
 date_latest <- max(obs_all$report_date)  # latest report date available, "ground truth"
-run_name <- "run9iv"                       # Name of run
+run_name <- "run9v"                       # Name of run
 
 date_start <- as.Date("2022-02-01") + days_included
 date_end <- as.Date("2022-07-01")
@@ -58,8 +58,8 @@ fit <- enw_fit_opts(
 )
 
 # Compile nowcasting model
-multithread_model <- enw_model(threads = TRUE, verbose = FALSE)
-# multithread_model <- enw_model(model = "code/dow_exp.stan", threads = TRUE, verbose = FALSE)
+# multithread_model <- enw_model(threads = TRUE, verbose = FALSE)
+multithread_model <- enw_model(model = "code/dow_exp.stan", threads = TRUE, verbose = FALSE)
 
 # Variable list to extract posteriors
 var_list <- c("refp", "rep", "phi", "leobs_init", "eobs_lsd", "obs_dow", "srdlh")
@@ -84,7 +84,7 @@ for (i in 1:length(date_list)){
   # Define all reporting modules
   report_wknd <- enw_report(~ 1 + weekend, data = pobs)                  # fixed weekend effect
   report_dow <- enw_report(~ (1 | dow_custom), data = pobs)              # random day of week effect
-  report_dow_hol <- enw_report(~ (1 | dow_custom_hol), data = pobs_hol)      # random day of week effect with holidays -> Sundays
+  report_dow_hol <- enw_report(~ (1 | dow_custom_hol), data = pobs_hol)  # random day of week effect with holidays -> Sundays
   report_wkly <- enw_report(~ 1 + report_possible, data = pobs_wk)       # fixed weekly report effect
   
   # Run nowcasts
@@ -113,7 +113,7 @@ for (i in 1:length(date_list)){
     # "Fixed" = nowcast,
     # "Report: Weekend" = wknd_nowcast,
     # "Report: DoW" = dow_nowcast,
-    "Report: DoW + Holiday" = hol_nowcast
+    "Report: DoW + Holiday, Expectation: DoW" = hol_nowcast
     # "Report: Weekly" = wkly_nowcast
   )
   
